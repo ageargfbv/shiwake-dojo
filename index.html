@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>仕訳道場</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1d2a44">
+<style>
+:root{
+  --bg:#e9e2d0;--paper:#fbf7ec;--paper2:#f3ecda;--ink:#1d2a44;--sub:#6b7286;--rule:#8db5a3;--rule2:#cfdcd2;
+  --shu:#c8372d;--ai:#2c5f8a;--kin:#b0822a;--key:#fffdf6;--keyb:#d9cfb6;--shadow:rgba(40,30,10,.18);
+  --pl:max(.7rem,env(safe-area-inset-left));--pr:max(.7rem,env(safe-area-inset-right));
+  --pt:max(.45rem,env(safe-area-inset-top));--pb:max(.45rem,calc(env(safe-area-inset-bottom) - .5rem));
+  --min:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1524;--paper:#1a2336;--paper2:#141c2d;--ink:#ece5d2;--sub:#98a0b4;--rule:#4f7868;--rule2:#2c3d44;
+  --shu:#e8604f;--ai:#7fb4de;--kin:#d6ab57;--key:#243049;--keyb:#35435f;--shadow:rgba(0,0,0,.45);
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:min(4.1vmin,2.05vmax);-webkit-text-size-adjust:100%}
+html,body{margin:0;height:100%;width:100%;overflow:hidden;position:fixed;overscroll-behavior:none;background:var(--bg);color:var(--ink);
+  font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
+[hidden]{display:none!important}
+#stage{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100dvh;padding:var(--pt) var(--pr) var(--pb) var(--pl);
+  background:radial-gradient(120% 140% at 0 0,var(--paper2),var(--bg))}
+@media (orientation:portrait){
+  :root{--pl:max(.7rem,env(safe-area-inset-top));--pr:max(.7rem,env(safe-area-inset-bottom));--pt:.45rem;--pb:.45rem}
+  #stage{width:100vh;width:100dvh;height:100vw;transform-origin:0 0;transform:rotate(90deg) translateY(-100%)}
+}
+.scr{width:100%;height:100%;display:flex;gap:.7rem}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ---------- ホーム ---------- */
+#home .side{width:13.5rem;display:flex;gap:.7rem;flex:none}
+.daiji{writing-mode:vertical-rl;font-family:var(--min);font-weight:700;font-size:3.1rem;letter-spacing:.16em;line-height:1;
+  padding:.5rem .1rem;position:relative;display:flex;align-items:center;gap:.5rem}
+.daiji i{font-style:normal;font-size:.8rem;letter-spacing:.05em;color:#fff;background:var(--shu);padding:.4rem .22rem;border-radius:.2rem;
+  box-shadow:inset 0 0 0 .08rem rgba(255,255,255,.55);transform:rotate(-4deg)}
+.stat{flex:1;display:flex;flex-direction:column;gap:.45rem;min-width:0}
+.tile{background:var(--paper);border-radius:.55rem;padding:.45rem .6rem;box-shadow:0 .1rem .35rem var(--shadow);border-left:.22rem solid var(--rule)}
+.tile small{display:block;font-size:.6rem;color:var(--sub);letter-spacing:.08em}
+.tile b{font-family:var(--min);font-size:1.45rem;line-height:1.15}
+.tile b span{font-size:.7rem;font-weight:400;color:var(--sub);margin-left:.15rem}
+.go{margin-top:auto;display:flex;flex-direction:column;gap:.4rem}
+.btn{height:2.5rem;border-radius:.6rem;font-weight:700;font-size:.9rem;letter-spacing:.06em;display:flex;align-items:center;justify-content:center;gap:.4rem;
+  background:var(--ink);color:var(--paper);box-shadow:0 .16rem 0 rgba(0,0,0,.28);transition:transform .08s}
+.btn:active{transform:translateY(.12rem);box-shadow:none}
+.btn.shu{background:var(--shu);color:#fff}
+.btn.line{background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 .08rem var(--keyb),0 .16rem 0 var(--keyb)}
+.btn:disabled{opacity:.35}
+.btn em{font-style:normal;font-weight:400;font-size:.7rem;opacity:.8}
+#home .cats{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);gap:.6rem;min-width:0}
+.cat{position:relative;background:var(--paper);border-radius:.6rem;padding:.6rem .6rem .55rem .95rem;text-align:left;display:flex;flex-direction:column;
+  box-shadow:0 .12rem .4rem var(--shadow);overflow:hidden;transition:transform .08s}
+.cat:active{transform:scale(.96)}
+.cat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:.42rem;background:var(--c)}
+.cat::after{content:"";position:absolute;left:.42rem;right:0;top:0;bottom:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,transparent 0 1.25rem,var(--rule2) 1.25rem 1.3rem);opacity:.55}
+.cat h3{margin:0;font-family:var(--min);font-size:1.02rem;line-height:1.3;position:relative;z-index:1}
+.cat .n{margin-top:auto;font-size:.68rem;color:var(--sub);position:relative;z-index:1}
+.cat .n b{font-size:1.25rem;color:var(--ink);font-family:var(--min)}
+.bar{height:.3rem;border-radius:.2rem;background:var(--rule2);margin-top:.25rem;position:relative;z-index:1;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c);border-radius:.2rem}
+.cat .sumi{position:absolute;right:.45rem;top:.4rem;z-index:1;width:1.7rem;height:1.7rem;border-radius:50%;border:.12rem solid var(--shu);color:var(--shu);
+  font-family:var(--min);font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;transform:rotate(-12deg)}
+#snd{position:absolute;left:calc(var(--pl) + .5rem);bottom:var(--pb);width:2rem;height:2rem;border-radius:50%;font-size:.95rem;color:var(--sub)}
+
+/* ---------- 出題 ---------- */
+#play{flex-direction:column;gap:.35rem}
+.top{height:1.7rem;flex:none;display:flex;align-items:center;gap:.6rem}
+.back{width:1.9rem;height:1.7rem;border-radius:.45rem;background:var(--paper);box-shadow:0 .08rem .25rem var(--shadow);font-size:1rem;line-height:1}
+.top .cn{font-family:var(--min);font-weight:700;font-size:.9rem}
+.dots{display:flex;gap:.28rem;flex:1;align-items:center}
+.dots i{width:.6rem;height:.6rem;border-radius:50%;background:var(--rule2)}
+.dots i.cur{background:var(--ink);transform:scale(1.25)}
+.dots i.ok{background:var(--shu)}
+.dots i.ng{background:var(--ai)}
+.top .tm{font-size:.85rem;color:var(--sub);min-width:2.6rem;text-align:right}
+.body{flex:1;display:flex;gap:.6rem;min-height:0}
+.main{flex:1;display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.qbox{flex:1;min-height:0;position:relative;background:var(--paper);border-radius:.55rem;box-shadow:0 .1rem .35rem var(--shadow)}
+.qin{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:.5rem .75rem;font-size:.86rem;line-height:1.62}
+.qin .no{font-family:var(--min);font-weight:700;color:var(--shu);margin-right:.4rem}
+.flip{position:absolute;right:.35rem;bottom:.3rem;height:1.45rem;padding:0 .6rem;border-radius:.75rem;font-size:.66rem;font-weight:700;
+  background:var(--ink);color:var(--paper);opacity:.92}
+.ex table{border-collapse:collapse;margin:.1rem 0 .35rem;font-size:.8rem}
+.ex td{padding:.08rem .5rem;border-bottom:.06rem solid var(--rule2)}
+.ex td.v{text-align:right}
+.ex td.m{border-left:.14rem double var(--shu)}
+.ex h4{margin:0 0 .1rem;font-family:var(--min);font-size:.85rem;color:var(--shu)}
+.ex p{margin:0;font-size:.8rem;line-height:1.6}
+
+.jr{flex:none;display:grid;grid-template-columns:1.6fr 1fr 1.6fr 1fr;grid-auto-rows:2.15rem;background:var(--paper);border-radius:.55rem;
+  box-shadow:0 .1rem .35rem var(--shadow);overflow:hidden;border:.08rem solid var(--rule)}
+.jh{grid-column:span 2;height:1.25rem;align-self:start;background:var(--rule);color:#fff;font-family:var(--min);font-weight:700;font-size:.74rem;
+  display:flex;align-items:center;justify-content:center;letter-spacing:.5em;text-indent:.5em}
+@media (prefers-color-scheme:dark){.jh{color:var(--ink)}}
+.jr{grid-template-rows:1.25rem repeat(4,2.15rem) 1.25rem}
+.c{position:relative;border-top:.06rem solid var(--rule);border-left:.06rem solid var(--rule2);font-size:.8rem;display:flex;align-items:center;
+  padding:0 .4rem;min-width:0;line-height:1.15;text-align:left}
+.c.a{border-left:0}
+.c.k.a{border-left:.16rem double var(--shu)}
+.c.v{justify-content:flex-end;font-size:.86rem}
+.c.long{font-size:.66rem}
+.c.act{background:color-mix(in srgb,var(--kin) 22%,transparent);box-shadow:inset 0 0 0 .12rem var(--kin);z-index:1}
+.c.act:empty::after{content:"";width:.08rem;height:1.1rem;background:var(--kin);animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+.c.ok::before,.c.ng::before{position:absolute;right:.25rem;top:50%;transform:translateY(-50%);font-weight:700;font-size:1.05rem;font-family:var(--min)}
+.c.ok::before{content:"○";color:var(--shu)}
+.c.ng::before{content:"×";color:var(--ai)}
+.c.ng{background:color-mix(in srgb,var(--ai) 12%,transparent)}
+.jt{grid-column:span 2;border-top:.06rem solid var(--rule);font-size:.68rem;color:var(--sub);display:flex;align-items:center;justify-content:space-between;padding:0 .45rem}
+.jt.k{border-left:.16rem double var(--shu)}
+.jt b{font-size:.8rem;color:var(--ink)}
+.jr.bal .jt b{color:var(--shu)}
+
+.panel{width:12.6rem;flex:none;display:flex;flex-direction:column;gap:.4rem;min-height:0}
+.pv{flex:1;min-height:0;display:flex;flex-direction:column;gap:.3rem}
+.chips{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(2.15rem,1fr);gap:.3rem;overflow-y:auto}
+.chip{background:var(--key);border-radius:.45rem;box-shadow:inset 0 0 0 .07rem var(--keyb),0 .12rem 0 var(--keyb);font-size:.72rem;font-weight:600;line-height:1.2;
+  padding:.1rem .3rem;display:flex;align-items:center;justify-content:center;text-align:center;word-break:break-all}
+.chip.long{font-size:.6rem}
+.chip:active,.key:active{transform:translateY(.1rem);box-shadow:inset 0 0 0 .07rem var(--keyb);background:color-mix(in srgb,var(--kin) 25%,var(--key))}
+.chip.used{box-shadow:inset 0 0 0 .1rem var(--rule),0 .12rem 0 var(--rule)}
+.del{flex:none;height:1.5rem;font-size:.66rem;color:var(--sub);border-radius:.4rem;box-shadow:inset 0 0 0 .07rem var(--keyb)}
+.pad{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(5,1fr);gap:.3rem}
+.key{background:var(--key);border-radius:.45rem;box-shadow:inset 0 0 0 .07rem var(--keyb),0 .12rem 0 var(--keyb);font-size:1.15rem;font-weight:600}
+.key.s{font-size:.82rem;color:var(--sub)}
+.key.n{background:var(--ink);color:var(--paper);box-shadow:0 .12rem 0 rgba(0,0,0,.3);font-size:.85rem}
+.res{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem}
+.han{width:6.4rem;height:6.4rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--min);font-weight:700;font-size:2rem;
+  letter-spacing:.08em;color:var(--shu);border:.22rem solid var(--shu);box-shadow:inset 0 0 0 .14rem var(--paper),inset 0 0 0 .22rem var(--shu);
+  transform:rotate(-10deg);animation:pon .32s cubic-bezier(.2,1.6,.4,1) both}
+.han.ng{color:var(--ai);border-color:var(--ai);box-shadow:inset 0 0 0 .14rem var(--paper),inset 0 0 0 .22rem var(--ai);font-size:1.45rem;animation:bure .35s both}
+@keyframes pon{0%{transform:rotate(-10deg) scale(2.4);opacity:0}60%{opacity:1}100%{transform:rotate(-10deg) scale(1)}}
+@keyframes bure{0%,100%{transform:rotate(-6deg)}25%{transform:rotate(-6deg) translateX(-.4rem)}75%{transform:rotate(-6deg) translateX(.4rem)}}
+.res .sec{font-size:.75rem;color:var(--sub)}
+.combo{font-family:var(--min);font-weight:700;color:var(--kin);font-size:.95rem}
+.panel>.btn{flex:none}
+
+/* ---------- 結果 ---------- */
+#result .sum{width:14rem;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35rem;background:var(--paper);
+  border-radius:.7rem;box-shadow:0 .12rem .4rem var(--shadow);padding:.6rem}
+#result .dan{font-family:var(--min);font-weight:700;font-size:1.5rem;color:var(--shu);border:.16rem solid var(--shu);padding:.2rem .7rem;border-radius:.3rem;
+  transform:rotate(-4deg);animation:pon2 .4s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pon2{0%{transform:rotate(-4deg) scale(2);opacity:0}100%{transform:rotate(-4deg) scale(1)}}
+#result .sc{font-family:var(--min);font-size:3.4rem;font-weight:700;line-height:1}
+#result .sc span{font-size:1.2rem;color:var(--sub)}
+#result .right{flex:1;display:flex;flex-direction:column;gap:.5rem;min-width:0}
+.list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--paper);border-radius:.6rem;box-shadow:0 .1rem .35rem var(--shadow)}
+.li{display:flex;align-items:center;gap:.6rem;padding:.42rem .8rem;border-bottom:.06rem solid var(--rule2);font-size:.82rem}
+.li b{font-family:var(--min);font-size:1.05rem;width:1.2rem;text-align:center}
+.li b.ok{color:var(--shu)}.li b.ng{color:var(--ai)}
+.li span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li small{color:var(--sub)}
+.row{display:flex;gap:.5rem}.row .btn{flex:1}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<section class="scr" id="home">
+  <div class="side">
+    <div class="daiji">仕訳道場<i>一級</i></div>
+    <div class="stat">
+      <div class="tile"><small>今日</small><b class="num" id="sToday"></b></div>
+      <div class="tile"><small>正答率</small><b class="num" id="sRate"></b></div>
+      <div class="tile"><small>習得</small><b class="num" id="sDone"></b></div>
+      <div class="go">
+        <button class="btn shu" id="bRand">おまかせ10問</button>
+        <button class="btn line" id="bWeak">苦手 <em id="nWeak"></em></button>
+      </div>
+    </div>
+  </div>
+  <div class="cats" id="cats"></div>
+  <button id="snd" aria-label="音"></button>
+</section>
+
+<section class="scr" id="play" hidden>
+  <div class="top">
+    <button class="back" id="bBack" aria-label="戻る">‹</button>
+    <span class="cn" id="pCat"></span>
+    <div class="dots" id="dots"></div>
+    <span class="tm num" id="pTime"></span>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="qbox"><div class="qin" id="qin"></div><button class="flip" id="bFlip" hidden></button></div>
+      <div class="jr" id="jr"></div>
+    </div>
+    <div class="panel">
+      <div class="pv" id="pvChips"><div class="chips" id="chips"></div><button class="del" id="bDel">この行を消す</button></div>
+      <div class="pv" id="pvPad" hidden><div class="pad" id="pad"></div></div>
+      <div class="pv" id="pvRes" hidden><div class="res" id="res"></div></div>
+      <button class="btn shu" id="bCheck">答え合わせ</button>
+    </div>
+  </div>
+</section>
+
+<section class="scr" id="result" hidden>
+  <div class="sum">
+    <div class="dan" id="rDan"></div>
+    <div class="sc num" id="rSc"></div>
+    <div class="sec num" id="rTime" style="font-size:.8rem;color:var(--sub)"></div>
+  </div>
+  <div class="right">
+    <div class="list" id="rList"></div>
+    <div class="row">
+      <button class="btn line" id="bHome">道場へ戻る</button>
+      <button class="btn shu" id="bRetry">まちがいをもう一度</button>
+    </div>
+  </div>
+</section>
+
+</div>
+<script src="questions.js"></script>
+<script>
+"use strict";
+const KEY = "shiwake-dojo-v1";
+const Q = window.QUESTIONS, CATS = window.CATS;
+const COLORS = ["#c8372d", "#2c5f8a", "#b0822a", "#3f8a6b", "#7a4f9a", "#c96a2b", "#2b7f8c", "#5a6478"];
+const ROWS = 4;
+const $ = id => document.getElementById(id);
+const fmt = n => Number(n).toLocaleString("ja-JP");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+const S = load();
+S.h = S.h || {}; S.days = S.days || {}; if (S.sound === undefined) S.sound = true;
+
+function today() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---- 音 ---- */
+let AC = null;
+function tone(f, d, when, type, g) {
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === "suspended") AC.resume();
+    const t = AC.currentTime + (when || 0), o = AC.createOscillator(), G = AC.createGain();
+    o.type = type || "sine"; o.frequency.value = f;
+    G.gain.setValueAtTime(g || .07, t); G.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(G); G.connect(AC.destination); o.start(t); o.stop(t + d + .02);
+  } catch (e) {}
+}
+const sTap = () => tone(880, .04, 0, "triangle", .035);
+const sOk = () => { tone(784, .12, 0, "triangle", .08); tone(1175, .25, .1, "triangle", .08); };
+const sNg = () => { tone(196, .25, 0, "sawtooth", .04); };
+
+/* ---- 画面の切り替え ---- */
+function show(id) { for (const s of ["home", "play", "result"]) $(s).hidden = s !== id; }
+
+/* ---- ホーム ---- */
+function isWeak(q) { const h = S.h[q.id]; return !!h && h.lastOk === false; }
+function isDone(q) { const h = S.h[q.id]; return !!h && h.lastOk === true; }
+function renderHome() {
+  let n = 0, ok = 0;
+  for (const k in S.h) { n += S.h[k].n || 0; ok += S.h[k].ok || 0; }
+  $("sToday").innerHTML = (S.days[today()] || 0) + "<span>問</span>";
+  $("sRate").innerHTML = n ? Math.round(ok / n * 100) + "<span>％</span>" : "–";
+  $("sDone").innerHTML = Q.filter(isDone).length + "<span>/ " + Q.length + "</span>";
+  const weak = Q.filter(isWeak).length;
+  $("nWeak").textContent = weak + "問"; $("bWeak").disabled = !weak;
+  $("snd").textContent = S.sound ? "♪" : "–";
+  $("cats").innerHTML = CATS.map((c, i) => {
+    const qs = Q.filter(q => q.c === c.id), d = qs.filter(isDone).length;
+    return '<button class="cat" data-c="' + c.id + '" style="--c:' + COLORS[i % COLORS.length] + '"><h3>' + esc(c.name) + "</h3>" +
+      (d === qs.length ? '<div class="sumi">済</div>' : "") +
+      '<div class="n num"><b>' + d + "</b> / " + qs.length + '</div><div class="bar"><i style="width:' + (d / qs.length * 100) + '%"></i></div></button>';
+  }).join("");
+  show("home");
+}
+function order(list) {
+  return list.map(q => { const h = S.h[q.id]; return { q, g: !h ? 0 : h.lastOk ? 2 : 1, r: Math.random(), t: h ? h.last : 0 }; })
+    .sort((a, b) => a.g - b.g || (a.g === 2 ? a.t - b.t : a.r - b.r)).map(x => x.q);
+}
+$("cats").addEventListener("click", e => {
+  const b = e.target.closest(".cat"); if (!b) return;
+  const c = CATS.find(x => x.id === b.dataset.c);
+  start(order(Q.filter(q => q.c === c.id)), c.name);
+});
+$("bRand").onclick = () => start(shuffle(order(Q).slice(0, 10)), "おまかせ");
+$("bWeak").onclick = () => start(shuffle(Q.filter(isWeak)).slice(0, 10), "苦手");
+$("snd").onclick = () => { S.sound = !S.sound; save(); renderHome(); sTap(); };
+
+/* ---- 出題 ---- */
+let P = null, timer = null;
+function start(list, name) {
+  if (!list.length) return;
+  sTap();
+  P = { list, name, i: 0, res: [], combo: 0 };
+  show("play");
+  nextQ();
+}
+function blank() { return Array.from({ length: ROWS }, () => ({ a: "", v: "" })); }
+function nextQ() {
+  const q = P.list[P.i];
+  P.rows = { d: blank(), k: blank() };
+  P.act = { s: "d", r: 0, f: "a" };
+  P.graded = false; P.showEx = false; P.t0 = Date.now(); P.sec = 0;
+  P.chips = shuffle([...new Set([...q.d, ...q.k].map(x => x[0]).concat(q.x || []))]);
+  $("pCat").textContent = P.name;
+  $("dots").innerHTML = P.list.map((_, i) => '<i class="' + (i < P.res.length ? (P.res[i].ok ? "ok" : "ng") : i === P.i ? "cur" : "") + '"></i>').join("");
+  $("bFlip").hidden = true;
+  $("bCheck").textContent = "答え合わせ";
+  renderQ(); buildJournal(); renderPanel(); tick();
+  clearInterval(timer); timer = setInterval(tick, 1000);
+}
+function tick() {
+  if (!P || P.graded) return;
+  P.sec = Math.floor((Date.now() - P.t0) / 1000);
+  $("pTime").textContent = Math.floor(P.sec / 60) + ":" + String(P.sec % 60).padStart(2, "0");
+}
+function renderQ() {
+  const q = P.list[P.i], el = $("qin");
+  if (!P.showEx) {
+    el.className = "qin";
+    el.innerHTML = '<span class="no">第' + (P.i + 1) + "問</span>" + esc(q.q);
+  } else {
+    let rows = "";
+    for (let i = 0; i < Math.max(q.d.length, q.k.length); i++) {
+      const d = q.d[i], k = q.k[i];
+      rows += "<tr><td>" + (d ? esc(d[0]) : "") + '</td><td class="v num">' + (d ? fmt(d[1]) : "") + '</td><td class="m">' + (k ? esc(k[0]) : "") + '</td><td class="v num">' + (k ? fmt(k[1]) : "") + "</td></tr>";
+    }
+    el.className = "qin ex";
+    el.innerHTML = "<h4>" + esc(q.t) + "</h4><table>" + rows + "</table><p>" + esc(q.e) + "</p>";
+  }
+  el.scrollTop = 0;
+  $("bFlip").textContent = P.showEx ? "問題文" : "解説";
+}
+function buildJournal() {
+  let h = '<div class="jh">借方</div><div class="jh">貸方</div>';
+  for (let r = 0; r < ROWS; r++) for (const s of ["d", "k"]) for (const f of ["a", "v"])
+    h += '<button class="c ' + s + " " + f + (f === "v" ? " num" : "") + '" data-s="' + s + '" data-r="' + r + '" data-f="' + f + '"></button>';
+  h += '<div class="jt"><span>合計</span><b class="num" id="td"></b></div><div class="jt k"><span>合計</span><b class="num" id="tk"></b></div>';
+  $("jr").innerHTML = h;
+  renderJournal();
+}
+function sum(side) { return P.rows[side].reduce((t, r) => t + (Number(r.v) || 0), 0); }
+function renderJournal() {
+  for (const el of $("jr").querySelectorAll(".c")) {
+    const { s, r, f } = el.dataset, row = P.rows[s][r];
+    el.textContent = f === "a" ? row.a : row.v ? fmt(row.v) : "";
+    el.classList.toggle("long", f === "a" && row.a.length > 9);
+    el.classList.toggle("act", !P.graded && P.act.s === s && P.act.r == r && P.act.f === f);
+  }
+  const d = sum("d"), k = sum("k");
+  $("td").textContent = d ? fmt(d) : ""; $("tk").textContent = k ? fmt(k) : "";
+  $("jr").classList.toggle("bal", d > 0 && d === k);
+  $("bCheck").disabled = !P.graded && !(complete("d") && complete("k"));
+}
+function complete(side) { return P.rows[side].some(r => r.a && Number(r.v) > 0); }
+function renderPanel() {
+  $("pvChips").hidden = P.graded || P.act.f !== "a";
+  $("pvPad").hidden = P.graded || P.act.f !== "v";
+  $("pvRes").hidden = !P.graded;
+  if (P.graded) return;
+  if (P.act.f === "a") {
+    const used = new Set(P.rows.d.concat(P.rows.k).map(r => r.a));
+    $("chips").innerHTML = P.chips.map(a => '<button class="chip' + (a.length > 8 ? " long" : "") + (used.has(a) ? " used" : "") + '">' + esc(a) + "</button>").join("");
+  }
+}
+$("pad").innerHTML = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "00", "000"].map(k => '<button class="key num" data-k="' + k + '">' + k + "</button>").join("") +
+  '<button class="key s" data-k="bs">⌫</button><button class="key s" data-k="c">C</button><button class="key n" data-k="n">次へ</button>';
+
+$("jr").addEventListener("click", e => {
+  const el = e.target.closest(".c"); if (!el || P.graded) return;
+  P.act = { s: el.dataset.s, r: +el.dataset.r, f: el.dataset.f };
+  sTap(); renderJournal(); renderPanel();
+});
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b || P.graded) return;
+  const row = P.rows[P.act.s][P.act.r];
+  row.a = b.textContent; P.act.f = "v";
+  sTap(); renderJournal(); renderPanel();
+});
+$("bDel").onclick = () => {
+  const row = P.rows[P.act.s][P.act.r]; row.a = ""; row.v = "";
+  sTap(); renderJournal(); renderPanel();
+};
+$("pad").addEventListener("click", e => {
+  const b = e.target.closest(".key"); if (!b || P.graded) return;
+  const k = b.dataset.k, row = P.rows[P.act.s][P.act.r];
+  if (k === "bs") row.v = row.v.slice(0, -1);
+  else if (k === "c") row.v = "";
+  else if (k === "n") {
+    // 次の空いている科目の欄へ。借方が埋まっていて貸方が空なら貸方へ
+    const s = P.act.s, o = s === "d" ? "k" : "d";
+    let r = P.rows[s].findIndex((x, i) => i > P.act.r && !x.a);
+    if (sum("d") !== sum("k") && sum(s) > sum(o)) { const j = P.rows[o].findIndex(x => !x.a); if (j >= 0) { P.act = { s: o, r: j, f: "a" }; r = -2; } }
+    if (r >= 0) P.act = { s, r, f: "a" };
+    else if (r === -1) P.act = { s, r: P.act.r, f: "a" };
+  }
+  else if ((row.v + k).length <= 11 && !(row.v === "" && k[0] === "0")) row.v += k;
+  sTap(); renderJournal(); renderPanel();
+});
+
+/* ---- 採点：同じ側の同じ科目は合算してから比べる（行の順番は問わない） ---- */
+function tally(pairs) { const m = {}; for (const [a, v] of pairs) m[a] = (m[a] || 0) + Number(v); return m; }
+function grade() {
+  const q = P.list[P.i]; let all = true;
+  for (const s of ["d", "k"]) {
+    const ans = tally(q[s]), rows = P.rows[s];
+    const mine = tally(rows.filter(r => r.a && Number(r.v) > 0).map(r => [r.a, r.v]));
+    rows.forEach((row, r) => {
+      if (!row.a && !row.v) return;
+      const ok = !!row.a && Number(row.v) > 0 && ans[row.a] === mine[row.a];
+      if (!ok) all = false;
+      $("jr").querySelector('.c.a[data-s="' + s + '"][data-r="' + r + '"]').classList.add(ok ? "ok" : "ng");
+    });
+    if (Object.keys(ans).length !== Object.keys(mine).length) all = false;
+  }
+  return all;
+}
+$("bCheck").onclick = () => {
+  if (!P.graded) {
+    P.graded = true; clearInterval(timer);
+    renderJournal();
+    const ok = grade(), q = P.list[P.i];
+    P.res.push({ q, ok, sec: P.sec });
+    P.combo = ok ? P.combo + 1 : 0;
+    const h = S.h[q.id] || (S.h[q.id] = { n: 0, ok: 0 });
+    h.n++; if (ok) h.ok++; h.last = Date.now(); h.lastOk = ok;
+    S.days[today()] = (S.days[today()] || 0) + 1; save();
+    ok ? sOk() : sNg();
+    $("res").innerHTML = '<div class="han' + (ok ? "" : " ng") + '">' + (ok ? "正解" : "不正解") + "</div>" +
+      (ok && P.combo >= 2 ? '<div class="combo">' + P.combo + "連続</div>" : "") + '<div class="sec num">' + P.sec + "秒</div>";
+    $("dots").children[P.i].className = ok ? "ok" : "ng";
+    P.showEx = true; renderQ(); $("bFlip").hidden = false;
+    $("bCheck").textContent = P.i + 1 < P.list.length ? "次の問題" : "結果を見る";
+    renderPanel();
+  } else {
+    sTap();
+    if (++P.i < P.list.length) nextQ(); else renderResult();
+  }
+};
+$("bFlip").onclick = () => { P.showEx = !P.showEx; renderQ(); };
+$("bBack").onclick = () => { clearInterval(timer); P.res.length ? renderResult() : renderHome(); };
+
+/* ---- 結果 ---- */
+function renderResult() {
+  clearInterval(timer);
+  const n = P.res.length, ok = P.res.filter(r => r.ok).length, rate = n ? ok / n : 0;
+  $("rDan").textContent = rate === 1 ? "免許皆伝" : rate >= .8 ? "師範代" : rate >= .6 ? "有段者" : "稽古中";
+  $("rSc").innerHTML = ok + "<span> / " + n + "</span>";
+  const t = P.res.reduce((s, r) => s + r.sec, 0);
+  $("rTime").textContent = Math.floor(t / 60) + "分" + (t % 60) + "秒";
+  $("rList").innerHTML = P.res.map(r => '<div class="li"><b class="' + (r.ok ? "ok" : "ng") + '">' + (r.ok ? "○" : "×") + "</b><span>" + esc(r.q.t) + '</span><small class="num">' + r.sec + "秒</small></div>").join("");
+  $("bRetry").disabled = ok === n;
+  show("result");
+  if (rate === 1) sOk();
+}
+$("bHome").onclick = () => { sTap(); renderHome(); };
+$("bRetry").onclick = () => start(P.res.filter(r => !r.ok).map(r => r.q), "もう一度");
+
+renderHome();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
