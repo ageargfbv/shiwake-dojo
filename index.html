@@ -236,7 +236,9 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 "use strict";
 const KEY = "shiwake-dojo-v1";
 const Q = window.QUESTIONS, CATS = window.CATS;
-const COLORS = ["#c8372d", "#2c5f8a", "#b0822a", "#3f8a6b", "#7a4f9a", "#c96a2b", "#2b7f8c", "#5a6478"];
+/* 分野の色は id で持つ（分野を足しても既存の色が変わらないように） */
+const COLORS = { yuka: "#c8372d", kotei: "#2c5f8a", hikiate: "#b0822a", jun: "#3f8a6b", zei: "#7a4f9a", shueki: "#c96a2b", renketsu: "#2b7f8c", kogyo: "#5a6478", genkin: "#8a6d3b" };
+const SPARE = ["#a04a6c", "#4d7a2a", "#3a5fa0"];
 const ROWS = 4;
 const $ = id => document.getElementById(id);
 const fmt = n => Number(n).toLocaleString("ja-JP");
@@ -304,9 +306,13 @@ function renderHome() {
   const due = Q.filter(isDue).length;
   $("nDue").textContent = due + "問"; $("bDue").disabled = !due;
   $("snd").textContent = S.sound ? "♪" : "–";
+  /* 分野の並び：8つまでは4列×2段、それより多いと3段（9つ＝3×3） */
+  const cols = CATS.length > 8 ? Math.ceil(CATS.length / 3) : 4;
+  $("cats").style.gridTemplateColumns = "repeat(" + cols + ",1fr)";
+  $("cats").style.gridTemplateRows = "repeat(" + Math.ceil(CATS.length / cols) + ",1fr)";
   $("cats").innerHTML = CATS.map((c, i) => {
     const qs = Q.filter(q => q.c === c.id), d = qs.filter(isDone).length, du = qs.filter(isDue).length;
-    return '<button class="cat" data-c="' + c.id + '" style="--c:' + COLORS[i % COLORS.length] + '"><h3>' + esc(c.name).replace(/・/g, "・<wbr>") + "</h3>" +
+    return '<button class="cat" data-c="' + c.id + '" style="--c:' + (COLORS[c.id] || SPARE[i % SPARE.length]) + '"><h3>' + esc(c.name).replace(/・/g, "・<wbr>") + "</h3>" +
       (d === qs.length ? '<div class="sumi">済</div>' : "") + (du ? '<div class="due num">復習' + du + "</div>" : "") +
       '<div class="n num"><b>' + d + "</b> / " + qs.length + '</div><div class="bar"><i style="width:' + (d / qs.length * 100) + '%"></i></div></button>';
   }).join("");
