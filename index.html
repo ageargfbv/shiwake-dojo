@@ -122,7 +122,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 .jt b{font-size:.8rem;color:var(--ink)}
 .jr.bal .jt b{color:var(--shu)}
 
-.panel{width:12.6rem;flex:none;display:flex;flex-direction:column;gap:.4rem;min-height:0}
+.panel{width:13.4rem;flex:none;display:flex;flex-direction:column;gap:.4rem;min-height:0}
 .pv{flex:1;min-height:0;display:flex;flex-direction:column;gap:.3rem}
 .chips{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(2.15rem,1fr);gap:.3rem;overflow-y:auto}
 .chip{background:var(--key);border-radius:.45rem;box-shadow:inset 0 0 0 .07rem var(--keyb),0 .12rem 0 var(--keyb);font-size:.72rem;font-weight:600;line-height:1.2;
@@ -131,10 +131,18 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 .chip:active,.key:active{transform:translateY(.1rem);box-shadow:inset 0 0 0 .07rem var(--keyb);background:color-mix(in srgb,var(--kin) 25%,var(--key))}
 .chip.used{box-shadow:inset 0 0 0 .1rem var(--rule),0 .12rem 0 var(--rule)}
 .del{flex:none;height:1.5rem;font-size:.66rem;color:var(--sub);border-radius:.4rem;box-shadow:inset 0 0 0 .07rem var(--keyb)}
-.pad{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(5,1fr);gap:.3rem}
-.key{background:var(--key);border-radius:.45rem;box-shadow:inset 0 0 0 .07rem var(--keyb),0 .12rem 0 var(--keyb);font-size:1.15rem;font-weight:600}
+.pad{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:.28rem}
+.key{background:var(--key);border-radius:.45rem;box-shadow:inset 0 0 0 .07rem var(--keyb),0 .12rem 0 var(--keyb);font-size:1.1rem;font-weight:600}
 .key.s{font-size:.82rem;color:var(--sub)}
-.key.n{background:var(--ink);color:var(--paper);box-shadow:0 .12rem 0 rgba(0,0,0,.3);font-size:.85rem}
+.key.op{background:color-mix(in srgb,var(--ai) 13%,var(--key));color:var(--ai);font-size:1.25rem}
+.key.eq{background:var(--ink);color:var(--paper);box-shadow:0 .12rem 0 rgba(0,0,0,.3);font-size:1.25rem}
+#disp{flex:none;height:2.35rem;background:var(--paper);border-radius:.45rem;box-shadow:inset 0 0 0 .07rem var(--keyb);padding:.15rem .5rem;
+  display:flex;flex-direction:column;justify-content:center;overflow:hidden;line-height:1.2}
+#disp div{display:flex;justify-content:flex-end;white-space:nowrap;overflow:hidden}
+#dE{font-size:.7rem;color:var(--sub);min-height:.84rem}
+#dR{font-size:1.05rem;font-weight:700}
+.c.v{overflow:hidden;white-space:nowrap}
+.c.v.ex{font-size:.66rem;color:var(--sub)}
 .res{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem}
 .han{width:6.4rem;height:6.4rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--min);font-weight:700;font-size:2rem;
   letter-spacing:.08em;color:var(--shu);border:.22rem solid var(--shu);box-shadow:inset 0 0 0 .14rem var(--paper),inset 0 0 0 .22rem var(--shu);
@@ -198,7 +206,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
     </div>
     <div class="panel">
       <div class="pv" id="pvChips"><div class="chips" id="chips"></div><button class="del" id="bDel">この行を消す</button></div>
-      <div class="pv" id="pvPad" hidden><div class="pad" id="pad"></div></div>
+      <div class="pv" id="pvPad" hidden><div id="disp"><div id="dE"></div><div id="dR" class="num"></div></div><div class="pad" id="pad"></div></div>
       <div class="pv" id="pvRes" hidden><div class="res" id="res"></div></div>
       <button class="btn shu" id="bCheck">答え合わせ</button>
     </div>
@@ -346,20 +354,51 @@ function buildJournal() {
   $("jr").innerHTML = h;
   renderJournal();
 }
-function sum(side) { return P.rows[side].reduce((t, r) => t + (Number(r.v) || 0), 0); }
+/* ---- 電卓：金額の欄に式を入れられる（× ÷ が先）。式は文字のまま持ち、= か欄を離れたときに答えにする ---- */
+const OPS = "+-*/";
+const hasOp = v => /[+\-*/]/.test(v);
+function calc(s) {
+  const t = String(s).match(/\d+(?:\.\d*)?|\.\d+|[+\-*/]/g);
+  if (!t) return NaN;
+  while (t.length && OPS.includes(t[t.length - 1])) t.pop();
+  if (!t.length || OPS.includes(t[0])) return NaN;
+  let total = 0, sign = 1, cur = Number(t[0]);
+  for (let i = 1; i < t.length; i += 2) {
+    const op = t[i], n = Number(t[i + 1]);
+    if (op === "*") cur *= n;
+    else if (op === "/") cur = n ? cur / n : NaN;
+    else { total += sign * cur; sign = op === "-" ? -1 : 1; cur = n; }
+  }
+  return Math.round((total + sign * cur) * 1e6) / 1e6;
+}
+function amt(v) { const x = calc(v); return isFinite(x) ? x : 0; }
+function fmtNum(s) { const [i, d] = String(s).split("."); return (i ? Number(i).toLocaleString("ja-JP") : "0") + (d !== undefined ? "." + d : ""); }
+function fmtExpr(v) { return v.replace(/\d+(?:\.\d*)?|\.\d+/g, fmtNum).replace(/\*/g, "×").replace(/\//g, "÷").replace(/-/g, "−"); }
+function cellText(v) { return !v ? "" : hasOp(v) ? fmtExpr(v) : fmtNum(v); }
+function finalize() {
+  for (const s of ["d", "k"]) for (const row of P.rows[s]) if (hasOp(row.v)) { const x = calc(row.v); if (isFinite(x) && x >= 0) row.v = String(x); }
+}
+
+function sum(side) { return P.rows[side].reduce((t, r) => t + amt(r.v), 0); }
 function renderJournal() {
   for (const el of $("jr").querySelectorAll(".c")) {
     const { s, r, f } = el.dataset, row = P.rows[s][r];
-    el.textContent = f === "a" ? row.a : row.v ? fmt(row.v) : "";
+    el.textContent = f === "a" ? row.a : cellText(row.v);
     el.classList.toggle("long", f === "a" && row.a.length > 9);
+    el.classList.toggle("ex", f === "v" && hasOp(row.v));
     el.classList.toggle("act", !P.graded && P.act.s === s && P.act.r == r && P.act.f === f);
+  }
+  if (!P.graded && P.act.f === "v") {
+    const v = P.rows[P.act.s][P.act.r].v, x = calc(v);
+    $("dE").textContent = hasOp(v) ? fmtExpr(v) : "";
+    $("dR").textContent = !v ? "0" : hasOp(v) ? (isFinite(x) ? "= " + fmtNum(String(x)) : "") : fmtNum(v);
   }
   const d = sum("d"), k = sum("k");
   $("td").textContent = d ? fmt(d) : ""; $("tk").textContent = k ? fmt(k) : "";
   $("jr").classList.toggle("bal", d > 0 && d === k);
   $("bCheck").disabled = !P.graded && !(complete("d") && complete("k"));
 }
-function complete(side) { return P.rows[side].some(r => r.a && Number(r.v) > 0); }
+function complete(side) { return P.rows[side].some(r => r.a && amt(r.v) > 0); }
 function renderPanel() {
   $("pvChips").hidden = P.graded || P.act.f !== "a";
   $("pvPad").hidden = P.graded || P.act.f !== "v";
@@ -370,11 +409,13 @@ function renderPanel() {
     $("chips").innerHTML = P.chips.map(a => '<button class="chip' + (a.length > 8 ? " long" : "") + (used.has(a) ? " used" : "") + '">' + esc(a) + "</button>").join("");
   }
 }
-$("pad").innerHTML = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "00", "000"].map(k => '<button class="key num" data-k="' + k + '">' + k + "</button>").join("") +
-  '<button class="key s" data-k="bs">⌫</button><button class="key s" data-k="c">C</button><button class="key n" data-k="n">次へ</button>';
+$("pad").innerHTML = [["7"], ["8"], ["9"], ["/", "÷", "op"], ["4"], ["5"], ["6"], ["*", "×", "op"], ["1"], ["2"], ["3"], ["-", "−", "op"],
+  ["0"], ["00"], ["000"], ["+", "+", "op"], ["c", "C", "s"], ["bs", "⌫", "s"], ["."], ["=", "=", "eq"]]
+  .map(([k, l, c]) => '<button class="key num ' + (c || "") + '" data-k="' + k + '">' + (l || k) + "</button>").join("");
 
 $("jr").addEventListener("click", e => {
   const el = e.target.closest(".c"); if (!el || P.graded) return;
+  finalize();
   P.act = { s: el.dataset.s, r: +el.dataset.r, f: el.dataset.f };
   sTap(); renderJournal(); renderPanel();
 });
@@ -390,18 +431,16 @@ $("bDel").onclick = () => {
 };
 $("pad").addEventListener("click", e => {
   const b = e.target.closest(".key"); if (!b || P.graded) return;
-  const k = b.dataset.k, row = P.rows[P.act.s][P.act.r];
-  if (k === "bs") row.v = row.v.slice(0, -1);
+  const k = b.dataset.k, row = P.rows[P.act.s][P.act.r], v = row.v;
+  const tok = (v.match(/[\d.]*$/) || [""])[0], last = v.slice(-1);
+  if (k === "bs") row.v = v.slice(0, -1);
   else if (k === "c") row.v = "";
-  else if (k === "n") {
-    // 次の空いている科目の欄へ。借方が埋まっていて貸方が空なら貸方へ
-    const s = P.act.s, o = s === "d" ? "k" : "d";
-    let r = P.rows[s].findIndex((x, i) => i > P.act.r && !x.a);
-    if (sum("d") !== sum("k") && sum(s) > sum(o)) { const j = P.rows[o].findIndex(x => !x.a); if (j >= 0) { P.act = { s: o, r: j, f: "a" }; r = -2; } }
-    if (r >= 0) P.act = { s, r, f: "a" };
-    else if (r === -1) P.act = { s, r: P.act.r, f: "a" };
-  }
-  else if ((row.v + k).length <= 11 && !(row.v === "" && k[0] === "0")) row.v += k;
+  else if (k === "=") { if (hasOp(v)) { const x = calc(v); if (isFinite(x) && x >= 0) row.v = String(x); } }
+  else if (OPS.includes(k)) { if (v) row.v = (OPS.includes(last) || last === "." ? v.slice(0, -1) : v) + k; }
+  else if (k === ".") { if (!tok.includes(".")) row.v = v + (tok === "" ? "0." : "."); }
+  else if (tok === "0") { if (k.length === 1 && k !== "0") row.v = v.slice(0, -1) + k; }   // 先頭の0の後ろに数字は続けない
+  else if (!(tok === "" && k.length > 1)) row.v = v + k;                                    // 00・000 は数の頭に置かない
+  if (row.v.length > 24) row.v = v;
   sTap(); renderJournal(); renderPanel();
 });
 
@@ -411,10 +450,10 @@ function grade() {
   const q = P.list[P.i]; let all = true;
   for (const s of ["d", "k"]) {
     const ans = tally(q[s]), rows = P.rows[s];
-    const mine = tally(rows.filter(r => r.a && Number(r.v) > 0).map(r => [r.a, r.v]));
+    const mine = tally(rows.filter(r => r.a && amt(r.v) > 0).map(r => [r.a, amt(r.v)]));
     rows.forEach((row, r) => {
       if (!row.a && !row.v) return;
-      const ok = !!row.a && Number(row.v) > 0 && ans[row.a] === mine[row.a];
+      const ok = !!row.a && amt(row.v) > 0 && ans[row.a] === mine[row.a];
       if (!ok) all = false;
       $("jr").querySelector('.c.a[data-s="' + s + '"][data-r="' + r + '"]').classList.add(ok ? "ok" : "ng");
     });
@@ -424,6 +463,7 @@ function grade() {
 }
 $("bCheck").onclick = () => {
   if (!P.graded) {
+    finalize();
     P.graded = true; clearInterval(timer);
     renderJournal();
     const ok = grade(), q = P.list[P.i];
