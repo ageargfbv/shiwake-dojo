@@ -65,6 +65,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 .cat::after{content:"";position:absolute;left:.42rem;right:0;top:0;bottom:0;pointer-events:none;
   background:repeating-linear-gradient(to bottom,transparent 0 1.25rem,var(--rule2) 1.25rem 1.3rem);opacity:.55}
 .cat h3{margin:0;font-family:var(--min);font-size:1.02rem;line-height:1.3;word-break:keep-all;position:relative;z-index:1}
+.cat .due{position:absolute;right:.45rem;bottom:.85rem;z-index:1;font-size:.62rem;font-weight:700;color:#fff;background:var(--shu);border-radius:.6rem;padding:.08rem .45rem}
 .cat .n{margin-top:auto;font-size:.68rem;color:var(--sub);position:relative;z-index:1}
 .cat .n b{font-size:1.25rem;color:var(--ink);font-family:var(--min)}
 .bar{height:.3rem;border-radius:.2rem;background:var(--rule2);margin-top:.25rem;position:relative;z-index:1;overflow:hidden}
@@ -183,7 +184,8 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
       <div class="tile"><small>正答率</small><b class="num" id="sRate"></b></div>
       <div class="tile"><small>習得</small><b class="num" id="sDone"></b></div>
       <div class="go">
-        <button class="btn shu" id="bRand">おまかせ10問</button>
+        <button class="btn shu" id="bDue">今日の復習 <em id="nDue"></em></button>
+        <button class="btn" id="bRand">おまかせ10問</button>
         <button class="btn line" id="bWeak">苦手 <em id="nWeak"></em></button>
       </div>
     </div>
@@ -268,6 +270,26 @@ const sNg = () => { tone(196, .25, 0, "sawtooth", .04); };
 /* ---- 画面の切り替え ---- */
 function show(id) { for (const s of ["home", "play", "result"]) $(s).hidden = s !== id; }
 
+/* ---- 復習の間隔：正解するたびに 1→3→7→14→30→60→120日。まちがえたら最初からで翌日。期日前の正解では進めない ---- */
+const IV = [1, 3, 7, 14, 30, 60, 120];
+function dayNum(t) { return Math.floor((t - new Date(t).getTimezoneOffset() * 60000) / 864e5); }   // 端末の暦の日付の通し番号
+function migrate(h) {   // 復習の間隔を入れる前の記録（lv・due が無い）を引き継ぐ
+  if (h && h.due === undefined && h.last) { h.lv = h.lastOk ? 1 : 0; h.due = dayNum(h.last) + 1; }
+  return h;
+}
+function schedule(h, ok, now) {
+  const td = dayNum(now);
+  migrate(h);
+  const wasDue = h.due === undefined || h.due <= td;
+  if (!ok) { h.lv = 0; h.due = td + 1; }
+  else if (wasDue) { h.lv = (h.lv || 0) + 1; h.due = td + IV[Math.min(h.lv, IV.length) - 1]; }
+  return h;
+}
+function isDue(q) { const h = migrate(S.h[q.id]); return !!h && h.due <= dayNum(Date.now()); }
+function dueList() {
+  return Q.filter(isDue).map(q => ({ q, d: S.h[q.id].due, r: Math.random() })).sort((a, b) => a.d - b.d || a.r - b.r).map(x => x.q);
+}
+
 /* ---- ホーム ---- */
 function isWeak(q) { const h = S.h[q.id]; return !!h && h.lastOk === false; }
 function isDone(q) { const h = S.h[q.id]; return !!h && h.lastOk === true; }
@@ -279,11 +301,13 @@ function renderHome() {
   $("sDone").innerHTML = Q.filter(isDone).length + "<span>/ " + Q.length + "</span>";
   const weak = Q.filter(isWeak).length;
   $("nWeak").textContent = weak + "問"; $("bWeak").disabled = !weak;
+  const due = Q.filter(isDue).length;
+  $("nDue").textContent = due + "問"; $("bDue").disabled = !due;
   $("snd").textContent = S.sound ? "♪" : "–";
   $("cats").innerHTML = CATS.map((c, i) => {
-    const qs = Q.filter(q => q.c === c.id), d = qs.filter(isDone).length;
+    const qs = Q.filter(q => q.c === c.id), d = qs.filter(isDone).length, du = qs.filter(isDue).length;
     return '<button class="cat" data-c="' + c.id + '" style="--c:' + COLORS[i % COLORS.length] + '"><h3>' + esc(c.name).replace(/・/g, "・<wbr>") + "</h3>" +
-      (d === qs.length ? '<div class="sumi">済</div>' : "") +
+      (d === qs.length ? '<div class="sumi">済</div>' : "") + (du ? '<div class="due num">復習' + du + "</div>" : "") +
       '<div class="n num"><b>' + d + "</b> / " + qs.length + '</div><div class="bar"><i style="width:' + (d / qs.length * 100) + '%"></i></div></button>';
   }).join("");
   show("home");
@@ -303,6 +327,7 @@ $("cats").addEventListener("click", e => {
   const c = CATS.find(x => x.id === b.dataset.c);
   start(order(Q.filter(q => q.c === c.id)), c.name);
 });
+$("bDue").onclick = () => start(dueList(), "今日の復習");
 $("bRand").onclick = () => start(shuffle(order(Q).slice(0, 10)), "おまかせ");
 $("bWeak").onclick = () => start(shuffle(Q.filter(isWeak)).slice(0, 10), "苦手");
 $("snd").onclick = () => { S.sound = !S.sound; save(); renderHome(); sTap(); };
@@ -476,7 +501,9 @@ $("bCheck").onclick = () => {
     P.res.push({ q, ok, sec: P.sec });
     P.combo = ok ? P.combo + 1 : 0;
     const h = S.h[q.id] || (S.h[q.id] = { n: 0, ok: 0 });
-    h.n++; if (ok) h.ok++; h.last = Date.now(); h.lastOk = ok;
+    const now = Date.now();
+    schedule(h, ok, now);
+    h.n++; if (ok) h.ok++; h.last = now; h.lastOk = ok;
     S.days[today()] = (S.days[today()] || 0) + 1; save();
     ok ? sOk() : sNg();
     $("res").innerHTML = '<div class="han' + (ok ? "" : " ng") + '">' + (ok ? "正解" : "不正解") + "</div>" +
