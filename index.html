@@ -28,11 +28,12 @@ html,body{margin:0;height:100%;width:100%;overflow:hidden;position:fixed;overscr
   font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
 [hidden]{display:none!important}
-#stage{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100dvh;padding:var(--pt) var(--pr) var(--pb) var(--pl);
+#stage{position:fixed;left:0;top:0;width:var(--W,100vw);height:var(--H,100vh);padding:var(--pt) var(--pr) var(--pb) var(--pl);
   background:radial-gradient(120% 140% at 0 0,var(--paper2),var(--bg))}
+/* 縦持ちは90度回して描く。stage の左＝画面の上（時計の帯）なので、そこは帯の高さ以上あける（iPhone は帯の下をぼかす） */
 @media (orientation:portrait){
-  :root{--pl:max(.7rem,env(safe-area-inset-top));--pr:max(.7rem,env(safe-area-inset-bottom));--pt:.45rem;--pb:.45rem}
-  #stage{width:100vh;width:100dvh;height:100vw;transform-origin:0 0;transform:rotate(90deg) translateY(-100%)}
+  :root{--pl:max(3.9rem,calc(env(safe-area-inset-top) + .5rem));--pr:max(.7rem,calc(env(safe-area-inset-bottom) + .2rem));--pt:.45rem;--pb:.45rem}
+  #stage{width:var(--H,100vh);height:var(--W,100vw);transform-origin:0 0;transform:rotate(90deg) translateY(-100%)}
 }
 .scr{width:100%;height:100%;display:flex;gap:.7rem}
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -63,7 +64,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 .cat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:.42rem;background:var(--c)}
 .cat::after{content:"";position:absolute;left:.42rem;right:0;top:0;bottom:0;pointer-events:none;
   background:repeating-linear-gradient(to bottom,transparent 0 1.25rem,var(--rule2) 1.25rem 1.3rem);opacity:.55}
-.cat h3{margin:0;font-family:var(--min);font-size:1.02rem;line-height:1.3;position:relative;z-index:1}
+.cat h3{margin:0;font-family:var(--min);font-size:1.02rem;line-height:1.3;word-break:keep-all;position:relative;z-index:1}
 .cat .n{margin-top:auto;font-size:.68rem;color:var(--sub);position:relative;z-index:1}
 .cat .n b{font-size:1.25rem;color:var(--ink);font-family:var(--min)}
 .bar{height:.3rem;border-radius:.2rem;background:var(--rule2);margin-top:.25rem;position:relative;z-index:1;overflow:hidden}
@@ -273,7 +274,7 @@ function renderHome() {
   $("snd").textContent = S.sound ? "♪" : "–";
   $("cats").innerHTML = CATS.map((c, i) => {
     const qs = Q.filter(q => q.c === c.id), d = qs.filter(isDone).length;
-    return '<button class="cat" data-c="' + c.id + '" style="--c:' + COLORS[i % COLORS.length] + '"><h3>' + esc(c.name) + "</h3>" +
+    return '<button class="cat" data-c="' + c.id + '" style="--c:' + COLORS[i % COLORS.length] + '"><h3>' + esc(c.name).replace(/・/g, "・<wbr>") + "</h3>" +
       (d === qs.length ? '<div class="sumi">済</div>' : "") +
       '<div class="n num"><b>' + d + "</b> / " + qs.length + '</div><div class="bar"><i style="width:' + (d / qs.length * 100) + '%"></i></div></button>';
   }).join("");
@@ -461,6 +462,14 @@ function renderResult() {
 }
 $("bHome").onclick = () => { sTap(); renderHome(); };
 $("bRetry").onclick = () => start(P.res.filter(r => !r.ok).map(r => r.q), "もう一度");
+
+/* 画面の実寸で stage を合わせる（100dvh は iPhone で実際より短くなり、下に余白が出た） */
+function fit() {
+  const r = document.documentElement.style;
+  r.setProperty("--W", window.innerWidth + "px"); r.setProperty("--H", window.innerHeight + "px");
+}
+fit();
+addEventListener("resize", fit); addEventListener("orientationchange", () => setTimeout(fit, 300));
 
 renderHome();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
