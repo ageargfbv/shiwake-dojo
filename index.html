@@ -176,7 +176,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 /* ---------- ○×の履歴 ---------- */
 .mk{font-family:var(--min);font-weight:700;letter-spacing:.06em;white-space:nowrap}
 .mk u{text-decoration:none}.mk .o{color:var(--shu)}.mk .x{color:var(--ai)}.mk .none{color:var(--sub);font-weight:400}
-.qin .mk{float:right;margin:0 0 .1rem .6rem;font-size:.82rem}
+#pMk .mk{font-size:.95rem}
 
 /* ---------- 問題一覧 ---------- */
 #list{gap:.6rem}
@@ -228,6 +228,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
     <button class="back" id="bBack" aria-label="戻る">‹</button>
     <span class="cn" id="pCat"></span>
     <div class="dots" id="dots"></div>
+    <span id="pMk"></span>
     <span class="tm num" id="pTime"></span>
   </div>
   <div class="body">
@@ -458,6 +459,7 @@ function nextQ() {
   $("pCat").textContent = P.name;
   $("dots").innerHTML = P.list.map((_, i) => '<i class="' + (i < P.res.length ? (P.res[i].ok ? "ok" : "ng") : i === P.i ? "cur" : "") + '"></i>').join("");
   $("bFlip").hidden = true;
+  $("pMk").innerHTML = marks(S.h[q.id]);
   $("bCheck").textContent = "答え合わせ";
   renderQ(); buildJournal(); renderPanel(); tick();
   clearInterval(timer); timer = setInterval(tick, 1000);
@@ -471,7 +473,7 @@ function renderQ() {
   const q = P.list[P.i], el = $("qin");
   if (!P.showEx) {
     el.className = "qin";
-    el.innerHTML = marks(S.h[q.id]) + '<span class="no">第' + (P.i + 1) + "問</span>" + esc(q.q);
+    el.innerHTML = '<span class="no">第' + (P.i + 1) + "問</span>" + esc(q.q);
   } else {
     let rows = "";
     for (let i = 0; i < Math.max(q.d.length, q.k.length); i++) {
@@ -617,6 +619,7 @@ $("bCheck").onclick = () => {
     $("res").innerHTML = '<div class="han' + (ok ? "" : " ng") + '">' + (ok ? "正解" : "不正解") + "</div>" +
       (ok && P.combo >= 2 ? '<div class="combo">' + P.combo + "連続</div>" : "") + '<div class="sec num">' + P.sec + "秒</div>";
     $("dots").children[P.i].className = ok ? "ok" : "ng";
+    $("pMk").innerHTML = marks(h);
     P.showEx = true; renderQ(); $("bFlip").hidden = false;
     $("bCheck").textContent = P.i + 1 < P.list.length ? "次の問題" : "結果を見る";
     renderPanel();
