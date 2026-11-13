@@ -171,6 +171,35 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 .li span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .li small{color:var(--sub)}
 .row{display:flex;gap:.5rem}.row .btn{flex:1}
+.go .row{gap:.35rem}.go .row .btn{min-width:0;padding:0 .2rem;gap:.25rem}
+
+/* ---------- ○×の履歴 ---------- */
+.mk{font-family:var(--min);font-weight:700;letter-spacing:.06em;white-space:nowrap}
+.mk u{text-decoration:none}.mk .o{color:var(--shu)}.mk .x{color:var(--ai)}.mk .none{color:var(--sub);font-weight:400}
+.qin .mk{float:right;margin:0 0 .1rem .6rem;font-size:.82rem}
+
+/* ---------- 問題一覧 ---------- */
+#list{gap:.6rem}
+.lcats{width:8rem;flex:none;display:flex;flex-direction:column;gap:.22rem}
+.lc{flex:1;min-height:0;border-radius:.4rem;background:var(--paper);font-size:.72rem;font-weight:600;text-align:left;padding:0 .5rem;
+  border-left:.3rem solid var(--c,var(--ink));box-shadow:0 .06rem .2rem var(--shadow);white-space:nowrap;overflow:hidden}
+.lc.on{background:var(--ink);color:var(--paper)}
+.lr{flex:1;display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.ltop{flex:none;height:1.9rem;display:flex;align-items:center;gap:.5rem}
+.ltop .cn{font-family:var(--min);font-weight:700;font-size:.95rem;white-space:nowrap}
+.seg{display:flex;background:var(--paper);border-radius:.5rem;box-shadow:inset 0 0 0 .07rem var(--keyb);overflow:hidden;flex:none}
+.seg button{padding:0 .6rem;height:1.7rem;font-size:.72rem;font-weight:600;white-space:nowrap}
+.seg button.on{background:var(--ink);color:var(--paper)}
+.sortb{margin-left:auto;height:1.7rem;padding:0 .6rem;font-size:.7rem;font-weight:600;border-radius:.5rem;background:var(--paper);
+  box-shadow:inset 0 0 0 .07rem var(--keyb);white-space:nowrap;flex:none}
+#lList .li{width:100%;text-align:left}
+#lList .li small{flex:none;width:5.6rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lList .li .mk{flex:none;font-size:.85rem}
+.lfoot{flex:none;display:flex;align-items:center;gap:.6rem}
+.lfoot span{flex:1;font-size:.75rem;color:var(--sub)}
+.lfoot .btn{width:13rem}
+.lempty{padding:1.2rem;text-align:center;color:var(--sub);font-size:.8rem}
+.tile small em{font-style:normal;float:right;color:var(--ink);font-weight:700;letter-spacing:0}
 </style>
 </head>
 <body>
@@ -180,13 +209,13 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
   <div class="side">
     <div class="daiji">仕訳道場<i>一級</i></div>
     <div class="stat">
-      <div class="tile"><small>今日</small><b class="num" id="sToday"></b></div>
+      <div class="tile"><small>今日<em class="num" id="sMin"></em></small><b class="num" id="sToday"></b></div>
       <div class="tile"><small>正答率</small><b class="num" id="sRate"></b></div>
       <div class="tile"><small>習得</small><b class="num" id="sDone"></b></div>
       <div class="go">
         <button class="btn shu" id="bDue">今日の復習 <em id="nDue"></em></button>
         <button class="btn" id="bRand">おまかせ10問</button>
-        <button class="btn line" id="bWeak">苦手 <em id="nWeak"></em></button>
+        <div class="row"><button class="btn line" id="bWeak">苦手<em id="nWeak"></em></button><button class="btn line" id="bList">一覧</button></div>
       </div>
     </div>
   </div>
@@ -230,6 +259,20 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
   </div>
 </section>
 
+<section class="scr" id="list" hidden>
+  <div class="lcats" id="lCats"></div>
+  <div class="lr">
+    <div class="ltop">
+      <button class="back" id="bLBack" aria-label="戻る">‹</button>
+      <span class="cn">問題一覧</span>
+      <div class="seg" id="lTabs"><button data-t="all">全部</button><button data-t="new">未回答</button><button data-t="ng">まちがい</button><button data-t="ok">正解</button></div>
+      <button class="sortb" id="lSort"></button>
+    </div>
+    <div class="list" id="lList"></div>
+    <div class="lfoot"><span class="num" id="lN"></span><button class="btn shu" id="bLGo"></button></div>
+  </div>
+</section>
+
 </div>
 <script src="questions.js"></script>
 <script>
@@ -247,7 +290,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 const S = load();
-S.h = S.h || {}; S.days = S.days || {}; if (S.sound === undefined) S.sound = true;
+S.h = S.h || {}; S.days = S.days || {}; S.sec = S.sec || {}; if (S.sound === undefined) S.sound = true;
+S.list = S.list || { tab: "all", cat: "", sort: "cat" };
 
 function today() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -270,7 +314,28 @@ const sOk = () => { tone(784, .12, 0, "triangle", .08); tone(1175, .25, .1, "tri
 const sNg = () => { tone(196, .25, 0, "sawtooth", .04); };
 
 /* ---- 画面の切り替え ---- */
-function show(id) { for (const s of ["home", "play", "result"]) $(s).hidden = s !== id; }
+function show(id) { for (const s of ["home", "play", "result", "list"]) $(s).hidden = s !== id; }
+
+/* ---- ○×の履歴：問題ごとに直近10回（h.hist＝"o"/"x" の並び）。hist の無い古い記録は最後の正誤1個だけ ---- */
+function histOf(h) { return !h || !h.n ? "" : h.hist !== undefined ? h.hist : h.lastOk ? "o" : "x"; }
+function marks(h) {
+  const s = histOf(h);
+  return '<span class="mk">' + (s ? [...s].map(c => '<u class="' + c + '">' + (c === "o" ? "○" : "×") + "</u>").join("") : '<u class="none">―</u>') + "</span>";
+}
+
+/* ---- 勉強時間：問題が出てから次へ進むまで（解説を読む間も含む）。1問5分で打ち切り。アプリを離れている間は数えない ---- */
+const CAP = 300;
+function addTime() {
+  if (!P || !P.tShow) return;
+  const s = Math.min(CAP, Math.round((Date.now() - P.tShow) / 1000));
+  P.tShow = null;
+  if (s > 0) { S.sec[today()] = (S.sec[today()] || 0) + s; save(); }
+}
+function fmtMin(s) { const m = Math.floor((s || 0) / 60); return m >= 60 ? Math.floor(m / 60) + "時間" + (m % 60) + "分" : m + "分"; }
+document.addEventListener("visibilitychange", () => {
+  if (!P || $("play").hidden) return;
+  if (document.hidden) addTime(); else if (!P.tShow) P.tShow = Date.now();
+});
 
 /* ---- 復習の間隔：正解するたびに 1→3→7→14→30→60→120日。まちがえたら最初からで翌日。期日前の正解では進めない ---- */
 const IV = [1, 3, 7, 14, 30, 60, 120];
@@ -299,10 +364,11 @@ function renderHome() {
   let n = 0, ok = 0;
   for (const k in S.h) { n += S.h[k].n || 0; ok += S.h[k].ok || 0; }
   $("sToday").innerHTML = (S.days[today()] || 0) + "<span>問</span>";
+  $("sMin").textContent = fmtMin(S.sec[today()]);
   $("sRate").innerHTML = n ? Math.round(ok / n * 100) + "<span>％</span>" : "–";
   $("sDone").innerHTML = Q.filter(isDone).length + "<span>/ " + Q.length + "</span>";
   const weak = Q.filter(isWeak).length;
-  $("nWeak").textContent = weak + "問"; $("bWeak").disabled = !weak;
+  $("nWeak").textContent = weak; $("bWeak").disabled = !weak;
   const due = Q.filter(isDue).length;
   $("nDue").textContent = due + "問"; $("bDue").disabled = !due;
   $("snd").textContent = S.sound ? "♪" : "–";
@@ -337,13 +403,48 @@ $("bDue").onclick = () => start(dueList(), "今日の復習");
 $("bRand").onclick = () => start(shuffle(order(Q).slice(0, 10)), "おまかせ");
 $("bWeak").onclick = () => start(shuffle(Q.filter(isWeak)).slice(0, 10), "苦手");
 $("snd").onclick = () => { S.sound = !S.sound; save(); renderHome(); sTap(); };
+$("bList").onclick = () => { sTap(); renderList(); };
+
+/* ---- 問題一覧：分野・状態で絞り、分野順かまちがいの多い順に並べる。行＝その1問、下のボタン＝表示中（20問まで） ---- */
+const LMAX = 20;
+function listItems() {
+  const L = S.list;
+  const st = q => { const h = S.h[q.id]; return !h || !h.n ? "new" : h.lastOk ? "ok" : "ng"; };
+  let qs = Q.filter(q => (!L.cat || q.c === L.cat) && (L.tab === "all" || st(q) === L.tab));
+  if (L.sort === "ng") {
+    const miss = q => { const h = S.h[q.id]; return h ? (h.n || 0) - (h.ok || 0) : 0; };
+    qs = qs.map((q, i) => ({ q, i, m: miss(q) })).sort((a, b) => b.m - a.m || a.i - b.i).map(x => x.q);
+  }
+  return qs;
+}
+function renderList() {
+  const L = S.list, catName = id => (CATS.find(c => c.id === id) || {}).name || "";
+  $("lCats").innerHTML = [{ id: "", name: "全分野" }].concat(CATS).map(c =>
+    '<button class="lc' + (L.cat === c.id ? " on" : "") + '" data-c="' + c.id + '" style="--c:' + (c.id ? COLORS[c.id] || "var(--ink)" : "var(--ink)") + '">' + esc(c.name) + "</button>").join("");
+  for (const b of $("lTabs").children) b.classList.toggle("on", b.dataset.t === L.tab);
+  $("lSort").textContent = L.sort === "ng" ? "まちがいの多い順" : "分野順";
+  const qs = listItems();
+  $("lList").innerHTML = qs.length ? qs.map(q => '<button class="li" data-q="' + q.id + '"><small>' + esc(catName(q.c)) + "</small><span>" + esc(q.t) + "</span>" + marks(S.h[q.id]) + "</button>").join("")
+    : '<div class="lempty">該当する問題はありません</div>';
+  $("lN").textContent = qs.length + "問";
+  $("bLGo").textContent = qs.length > LMAX ? "表示中の" + LMAX + "問を解く" : "表示中の" + qs.length + "問を解く";
+  $("bLGo").disabled = !qs.length;
+  show("list");
+}
+function listName() { const L = S.list; return L.cat ? CATS.find(c => c.id === L.cat).name : "一覧"; }
+$("lCats").addEventListener("click", e => { const b = e.target.closest(".lc"); if (!b) return; S.list.cat = b.dataset.c; save(); sTap(); renderList(); $("lList").scrollTop = 0; });
+$("lTabs").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.list.tab = b.dataset.t; save(); sTap(); renderList(); $("lList").scrollTop = 0; });
+$("lSort").onclick = () => { S.list.sort = S.list.sort === "ng" ? "cat" : "ng"; save(); sTap(); renderList(); $("lList").scrollTop = 0; };
+$("lList").addEventListener("click", e => { const b = e.target.closest(".li"); if (!b) return; start([Q.find(q => q.id === b.dataset.q)], listName(), "list"); });
+$("bLGo").onclick = () => { const qs = listItems(); start((S.list.sort === "ng" ? qs : order(qs)).slice(0, LMAX), listName(), "list"); };
+$("bLBack").onclick = () => { sTap(); renderHome(); };
 
 /* ---- 出題 ---- */
 let P = null, timer = null;
-function start(list, name) {
+function start(list, name, from) {
   if (!list.length) return;
   sTap();
-  P = { list, name, i: 0, res: [], combo: 0 };
+  P = { list, name, i: 0, res: [], combo: 0, from: from || "home" };
   show("play");
   nextQ();
 }
@@ -352,7 +453,7 @@ function nextQ() {
   const q = P.list[P.i];
   P.rows = { d: blank(), k: blank() };
   P.act = { s: "d", r: 0, f: "a" };
-  P.graded = false; P.showEx = false; P.t0 = Date.now(); P.sec = 0;
+  P.graded = false; P.showEx = false; P.t0 = Date.now(); P.sec = 0; P.tShow = Date.now();
   P.chips = shuffle([...new Set([...q.d, ...q.k].map(x => x[0]).concat(q.x || []))]);
   $("pCat").textContent = P.name;
   $("dots").innerHTML = P.list.map((_, i) => '<i class="' + (i < P.res.length ? (P.res[i].ok ? "ok" : "ng") : i === P.i ? "cur" : "") + '"></i>').join("");
@@ -370,7 +471,7 @@ function renderQ() {
   const q = P.list[P.i], el = $("qin");
   if (!P.showEx) {
     el.className = "qin";
-    el.innerHTML = '<span class="no">第' + (P.i + 1) + "問</span>" + esc(q.q);
+    el.innerHTML = marks(S.h[q.id]) + '<span class="no">第' + (P.i + 1) + "問</span>" + esc(q.q);
   } else {
     let rows = "";
     for (let i = 0; i < Math.max(q.d.length, q.k.length); i++) {
@@ -509,6 +610,7 @@ $("bCheck").onclick = () => {
     const h = S.h[q.id] || (S.h[q.id] = { n: 0, ok: 0 });
     const now = Date.now();
     schedule(h, ok, now);
+    h.hist = (histOf(h) + (ok ? "o" : "x")).slice(-10);
     h.n++; if (ok) h.ok++; h.last = now; h.lastOk = ok;
     S.days[today()] = (S.days[today()] || 0) + 1; save();
     ok ? sOk() : sNg();
@@ -519,12 +621,13 @@ $("bCheck").onclick = () => {
     $("bCheck").textContent = P.i + 1 < P.list.length ? "次の問題" : "結果を見る";
     renderPanel();
   } else {
-    sTap();
+    sTap(); addTime();
     if (++P.i < P.list.length) nextQ(); else renderResult();
   }
 };
 $("bFlip").onclick = () => { P.showEx = !P.showEx; renderQ(); };
-$("bBack").onclick = () => { clearInterval(timer); P.res.length ? renderResult() : renderHome(); };
+function backTo() { P.from === "list" ? renderList() : renderHome(); }
+$("bBack").onclick = () => { clearInterval(timer); addTime(); P.res.length ? renderResult() : backTo(); };
 
 /* ---- 結果 ---- */
 function renderResult() {
@@ -536,11 +639,12 @@ function renderResult() {
   $("rTime").textContent = Math.floor(t / 60) + "分" + (t % 60) + "秒";
   $("rList").innerHTML = P.res.map(r => '<div class="li"><b class="' + (r.ok ? "ok" : "ng") + '">' + (r.ok ? "○" : "×") + "</b><span>" + esc(r.q.t) + '</span><small class="num">' + r.sec + "秒</small></div>").join("");
   $("bRetry").disabled = ok === n;
+  $("bHome").textContent = P.from === "list" ? "一覧へ戻る" : "道場へ戻る";
   show("result");
   if (rate === 1) sOk();
 }
-$("bHome").onclick = () => { sTap(); renderHome(); };
-$("bRetry").onclick = () => start(P.res.filter(r => !r.ok).map(r => r.q), "もう一度");
+$("bHome").onclick = () => { sTap(); backTo(); };
+$("bRetry").onclick = () => start(P.res.filter(r => !r.ok).map(r => r.q), "もう一度", P.from);
 
 /* 画面の実寸で stage を合わせる（100dvh は iPhone で実際より短くなり、下に余白が出た） */
 function fit() {
