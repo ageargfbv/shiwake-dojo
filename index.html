@@ -200,6 +200,32 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 .lfoot .btn{width:13rem}
 .lempty{padding:1.2rem;text-align:center;color:var(--sub);font-size:.8rem}
 .tile small em{font-style:normal;float:right;color:var(--ink);font-weight:700;letter-spacing:0}
+
+/* ---------- まとめ（A4まとめをページで見る。中身の見た目は matome\<分野>.js の CSS） ---------- */
+#mat{flex-direction:column;gap:.35rem;position:relative}
+#mSec{flex:1;min-width:0;font-size:.74rem;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tocb{flex:none;height:1.7rem;padding:0 .8rem;border-radius:.5rem;background:var(--paper);box-shadow:inset 0 0 0 .07rem var(--keyb);font-size:.72rem;font-weight:600}
+#mPage{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--paper);border-radius:.55rem;
+  box-shadow:0 .1rem .35rem var(--shadow);padding:.5rem .6rem}
+.mrow{display:flex;gap:.5rem;align-items:flex-start}
+.mrow+.mrow{margin-top:.5rem}
+.mrow>.mb{flex:1 1 0;min-width:0}
+.mrow>.mb.half1{flex:0 0 calc(50% - .25rem)}
+#mMeas{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none}
+.mfoot{flex:none;display:flex;align-items:center;gap:.6rem}
+.mfoot .btn{width:9rem}
+.mfoot span{flex:1;text-align:center;font-size:.8rem;color:var(--sub)}
+#mToc{position:absolute;left:0;right:0;top:2.1rem;bottom:0;z-index:5;background:var(--paper);border-radius:.55rem;
+  box-shadow:0 .2rem 1rem var(--shadow);padding:.5rem;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:.3rem;align-content:start}
+#mToc button{text-align:left;padding:.35rem .6rem;border-radius:.4rem;font-size:.76rem;line-height:1.35;box-shadow:inset 0 0 0 .07rem var(--keyb)}
+#mToc button.on{background:var(--ink);color:var(--paper)}
+.flip.mat{right:auto;left:.35rem;background:var(--shu);color:#fff}
+.mp{--line:var(--rule2);--head:var(--paper2);--blue:#2563c9;--red:#c8323a;--pinkc:#d6336c;--green:#1f8a4c;--yellowbg:#fdf5c9;--ar:#B27C00;--bluebg:#cfe0f7;
+  --yl:#f6e27a;--uly:#e0a800;font-size:.8rem;line-height:1.5;color:var(--ink)}
+@media (prefers-color-scheme:dark){.mp{--blue:#7fb4de;--red:#e8604f;--pinkc:#f07aa5;--green:#5cc489;--yellowbg:#4a3f12;--ar:#d6ab57;--bluebg:#22344f;--yl:#6b5a14;--uly:#d6ab57}}
+.mp .a4-fig{background:#fffdf6;border-radius:.3rem}
+.mp .a4-fig svg{max-height:calc(var(--mpH,20rem) - 3.4rem)}   /* 大きい図はページの高さに収める（横は余白になる） */
+.mb>.a4-card,.mb>table,.mb>ul,.mb>ol,.mb>p{margin-top:0;margin-bottom:0}
 </style>
 </head>
 <body>
@@ -233,7 +259,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
   </div>
   <div class="body">
     <div class="main">
-      <div class="qbox"><div class="qin" id="qin"></div><button class="flip" id="bFlip" hidden></button></div>
+      <div class="qbox"><div class="qin" id="qin"></div><button class="flip mat" id="bMat" hidden>まとめ</button><button class="flip" id="bFlip" hidden></button></div>
       <div class="jr" id="jr"></div>
     </div>
     <div class="panel">
@@ -270,8 +296,21 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
       <button class="sortb" id="lSort"></button>
     </div>
     <div class="list" id="lList"></div>
-    <div class="lfoot"><span class="num" id="lN"></span><button class="btn shu" id="bLGo"></button></div>
+    <div class="lfoot"><span class="num" id="lN"></span><button class="btn line" id="bLMat" hidden>まとめ</button><button class="btn shu" id="bLGo"></button></div>
   </div>
+</section>
+
+<section class="scr" id="mat" hidden>
+  <div class="top">
+    <button class="back" id="bMBack" aria-label="戻る">‹</button>
+    <span class="cn" id="mCat"></span>
+    <span id="mSec"></span>
+    <button class="tocb" id="bToc">目次</button>
+  </div>
+  <div id="mPage" class="num"></div>
+  <div class="mfoot"><button class="btn line" id="bMPrev">◀ 前へ</button><span class="num" id="mNo"></span><button class="btn line" id="bMNext">次へ ▶</button></div>
+  <div id="mToc" hidden></div>
+  <div id="mMeas"></div>
 </section>
 
 </div>
@@ -315,7 +354,8 @@ const sOk = () => { tone(784, .12, 0, "triangle", .08); tone(1175, .25, .1, "tri
 const sNg = () => { tone(196, .25, 0, "sawtooth", .04); };
 
 /* ---- 画面の切り替え ---- */
-function show(id) { for (const s of ["home", "play", "result", "list"]) $(s).hidden = s !== id; }
+function show(id) { for (const s of ["home", "play", "result", "list", "mat"]) $(s).hidden = s !== id; }
+const hasMat = c => !!(CATS.find(x => x.id === c) || {}).mat;
 
 /* ---- ○×の履歴：問題ごとに直近10回（h.hist＝"o"/"x" の並び）。hist の無い古い記録は最後の正誤1個だけ ---- */
 function histOf(h) { return !h || !h.n ? "" : h.hist !== undefined ? h.hist : h.lastOk ? "o" : "x"; }
@@ -430,6 +470,7 @@ function renderList() {
   $("lN").textContent = qs.length + "問";
   $("bLGo").textContent = qs.length > LMAX ? "表示中の" + LMAX + "問を解く" : "表示中の" + qs.length + "問を解く";
   $("bLGo").disabled = !qs.length;
+  $("bLMat").hidden = !hasMat(L.cat);
   show("list");
 }
 function listName() { const L = S.list; return L.cat ? CATS.find(c => c.id === L.cat).name : "一覧"; }
@@ -458,7 +499,7 @@ function nextQ() {
   P.chips = shuffle([...new Set([...q.d, ...q.k].map(x => x[0]).concat(q.x || []))]);
   $("pCat").textContent = P.name;
   $("dots").innerHTML = P.list.map((_, i) => '<i class="' + (i < P.res.length ? (P.res[i].ok ? "ok" : "ng") : i === P.i ? "cur" : "") + '"></i>').join("");
-  $("bFlip").hidden = true;
+  $("bFlip").hidden = true; $("bMat").hidden = true;
   $("pMk").innerHTML = marks(S.h[q.id]);
   $("bCheck").textContent = "答え合わせ";
   renderQ(); buildJournal(); renderPanel(); tick();
@@ -620,7 +661,7 @@ $("bCheck").onclick = () => {
       (ok && P.combo >= 2 ? '<div class="combo">' + P.combo + "連続</div>" : "") + '<div class="sec num">' + P.sec + "秒</div>";
     $("dots").children[P.i].className = ok ? "ok" : "ng";
     $("pMk").innerHTML = marks(h);
-    P.showEx = true; renderQ(); $("bFlip").hidden = false;
+    P.showEx = true; renderQ(); $("bFlip").hidden = false; $("bMat").hidden = !hasMat(q.c);
     $("bCheck").textContent = P.i + 1 < P.list.length ? "次の問題" : "結果を見る";
     renderPanel();
   } else {
@@ -649,13 +690,257 @@ function renderResult() {
 $("bHome").onclick = () => { sTap(); backTo(); };
 $("bRetry").onclick = () => start(P.res.filter(r => !r.ok).map(r => r.q), "もう一度", P.from);
 
+/* ---- まとめ：A4まとめ（matome\<分野>.js）を塊に割り、画面の大きさで計ってページに詰める ----
+   塊＝カード・表・箇条。節（A4の h2）ごとに新しいページ。半幅に収まらない塊（横にはみ出す・大きい図・表）は全幅。
+   1ページより高い塊は1枚に置いて縦にスクロール。矢印（data-ar）と仕訳の囲みは A4 と同じ指定を、回転に強い位置の取り方で引き直す */
+const MT = { cat: "", secs: null, pages: [], i: 0, from: "home", size: "" };
+function loadMat(id) {
+  return new Promise((ok, ng) => {
+    if (window.MATOME && MATOME[id]) return ok(MATOME[id]);
+    const s = document.createElement("script");
+    s.src = "matome/" + id + ".js";
+    s.onload = () => (window.MATOME && MATOME[id] ? ok(MATOME[id]) : ng());
+    s.onerror = ng;
+    document.head.appendChild(s);
+  });
+}
+const WRAP = ["a4-cols", "a4-cols3", "a4-colsW", "a4-grid64"];   // A4の class 名は tools\まとめ.py が a4- を付けている
+function splitTable(tb) {   // 長い表は見出しの行を付けて分ける（過去問の表は回ごと、ほかは7行ずつ）
+  const rows = [...tb.rows], head = rows.filter(r => r.querySelector("th")), body = rows.filter(r => !r.querySelector("th"));
+  if (tb.querySelector("[rowspan]") || body.length <= 7) return [tb];
+  const groups = [];
+  const kai = body.some(r => r.querySelector(".a4-kai"));
+  for (const r of body) {
+    if (!groups.length || (kai ? r.querySelector(".a4-kai") : groups[groups.length - 1].length >= 6)) groups.push([]);
+    groups[groups.length - 1].push(r);
+  }
+  return groups.map(g => {
+    const t = tb.cloneNode(false);
+    const cg = tb.querySelector("colgroup"); if (cg) t.appendChild(cg.cloneNode(true));
+    const tbd = document.createElement("tbody");
+    head.concat(g).forEach(r => tbd.appendChild(r.cloneNode(true)));
+    t.appendChild(tbd); return t;
+  });
+}
+function matSecs(d) {
+  const root = new DOMParser().parseFromString("<div>" + d.html + "</div>", "text/html").body.firstChild;
+  const secs = []; let cur = { t: "はじめに", b: [] }; secs.push(cur);
+  const add = el => {
+    if (el.tagName === "TABLE") { splitTable(el).forEach(t => cur.b.push(t)); return; }
+    if (el.tagName === "UL" && el.children.length > 7) {   // 長い箇条（引っかけ）は7行ずつ
+      const li = [...el.children];
+      for (let i = 0; i < li.length; i += 7) { const u = el.cloneNode(false); li.slice(i, i + 7).forEach(x => u.appendChild(x.cloneNode(true))); cur.b.push(u); }
+      return;
+    }
+    cur.b.push(el);
+  };
+  const walk = el => {
+    for (const c of [...el.children]) {
+      if (c.tagName === "H1") continue;
+      if (c.tagName === "H2") { cur = { t: c.textContent.trim(), b: [] }; secs.push(cur); continue; }
+      if (c.tagName === "SECTION") { walk(c); continue; }
+      if (WRAP.some(w => c.classList.contains(w))) { [...c.children].forEach(add); continue; }
+      add(c);
+    }
+  };
+  walk(root);
+  for (const s of secs) s.b = s.b.map(el => {
+    boxJn(el);
+    const w = document.createElement("div"); w.className = "mb mp"; w.appendChild(el);
+    const h = el.querySelector("h3 > span") || el.querySelector("h3");
+    w.dataset.k = h ? h.textContent.trim() : "";
+    return w;
+  });
+  return secs.filter(s => s.b.length);
+}
+/* 仕訳の四角（A4の boxJn と同じ決まり）：（借）で始まる行から、続く行まで。見出し・手書き・空の行で閉じる */
+function boxJn(root) {
+  root.querySelectorAll("table.a4-jn:not(.a4-nobox)").forEach(tb => {
+    const groups = []; let cur = null;
+    [...tb.rows].forEach(tr => {
+      const cells = [...tr.cells], txt = c => c ? c.textContent.trim() : "";
+      const brk = ["a4-h", "a4-sub", "a4-hw", "a4-memo"].some(k => tr.classList.contains(k)) || !cells.some(c => txt(c));
+      const si = cells.findIndex(c => txt(c) === "（借）");
+      if (brk) { cur = null; return; }
+      if (si >= 0) { const rs = cells.filter(c => c.classList.contains("a4-r")); cur = { rows: [tr], s: si, e: cells.indexOf(rs[rs.length - 1]), gi: cells.findIndex(c => txt(c) === "（貸）") }; groups.push(cur); }
+      else if (cur && cells.slice(cur.s, cur.e + 1).some(c => txt(c))) cur.rows.push(tr);
+      else cur = null;
+    });
+    groups.forEach((g, k) => {
+      const n = g.rows.length;
+      g.rows.forEach((tr, i) => {
+        const e = Math.min(g.e, tr.cells.length - 1);
+        for (let j = g.s; j <= e; j++) { const c = tr.cells[j]; if (!c) continue;
+          if (i === 0) c.classList.add("a4-bxt"); if (i === n - 1) c.classList.add("a4-bxb");
+          if (j === g.s) c.classList.add("a4-bxl"); if (j === e) c.classList.add("a4-bxr"); if (j === g.gi) c.classList.add("a4-bxm"); }
+      });
+      const prev = g.rows[0].previousElementSibling;
+      if (k > 0 && prev && groups[k - 1].rows.includes(prev)) { const gap = document.createElement("tr"); gap.className = "a4-bxgap"; gap.innerHTML = '<td colspan="20"></td>'; g.rows[0].parentNode.insertBefore(gap, g.rows[0]); }
+    });
+  });
+}
+/* 矢印と囲み：位置は offsetLeft/Top をたどって取る（縦持ちで stage を回しても狂わない） */
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(n, a) { const e = document.createElementNS(SVGNS, n); for (const k in a) e.setAttribute(k, a[k]); return e; }
+function relRect(e, h) {
+  let x = 0, y = 0, n = e;
+  while (n && n !== h) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+  return n === h ? { left: x, top: y, width: e.offsetWidth, height: e.offsetHeight } : null;
+}
+function arPt(r, s) {
+  if (s === "l") return [r.left - 1, r.top + r.height / 2]; if (s === "r") return [r.left + r.width + 1, r.top + r.height / 2];
+  if (s === "t") return [r.left + r.width / 2, r.top - 1]; if (s === "b") return [r.left + r.width / 2, r.top + r.height + 1];
+  return [r.left + r.width / 2, r.top + r.height / 2];
+}
+function arHead(sv, x, y, ang, c) { const L = 5, W = .45; sv.appendChild(svgEl("path", { d: "M" + (x - L * Math.cos(ang - W)) + " " + (y - L * Math.sin(ang - W)) + " L" + x + " " + y + " L" + (x - L * Math.cos(ang + W)) + " " + (y - L * Math.sin(ang + W)), fill: "none", stroke: c, "stroke-width": 1.1 })); }
+function drawMarks(root) {
+  const ink = getComputedStyle(root).color;
+  root.querySelectorAll("[data-ar],[data-bx]").forEach(h => {
+    h.querySelectorAll(":scope > svg.a4-ov").forEach(s => s.remove());
+    const sv = svgEl("svg", { class: "a4-ov", width: h.clientWidth, height: h.clientHeight }); h.appendChild(sv);
+    (h.getAttribute("data-ar") || "").split(";").map(s => s.trim()).filter(Boolean).forEach(spec => {
+      const parts = spec.split("|"), ft = parts[0].split(">"), o = {};
+      parts.slice(1).forEach(x => { const i = x.indexOf("="); o[x.slice(0, i).trim()] = x.slice(i + 1).trim(); });
+      const A = h.querySelector('[data-a="' + ft[0].trim() + '"]'), B = h.querySelector('[data-a="' + ft[1].trim() + '"]');
+      const a = A && relRect(A, h), b = B && relRect(B, h); if (!a || !b) return;
+      let sa, sb;
+      if (o.s) [sa, sb] = o.s.split(">");
+      else { const dx = (b.left + b.width / 2) - (a.left + a.width / 2), dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+        if (Math.abs(dy) > Math.abs(dx) * .6) { sa = dy > 0 ? "b" : "t"; sb = dy > 0 ? "t" : "b"; } else { sa = dx > 0 ? "r" : "l"; sb = dx > 0 ? "l" : "r"; } }
+      const [x1, y1] = arPt(a, sa), [x2, y2] = arPt(b, sb);
+      const c = o.c || ink, bend = +(o.b || 0), mx = (x1 + x2) / 2, my = (y1 + y2) / 2, len = Math.hypot(x2 - x1, y2 - y1) || 1;
+      const cx = mx - (y2 - y1) / len * bend, cy = my + (x2 - x1) / len * bend;
+      const p = svgEl("path", { d: "M" + x1 + " " + y1 + " Q" + cx + " " + cy + " " + x2 + " " + y2, fill: "none", stroke: c, "stroke-width": o.w || 1.1 });
+      if (o.d) p.setAttribute("stroke-dasharray", "3 2.5");
+      sv.appendChild(p);
+      const hd = o.h || "e";
+      if (hd === "e" || hd === "b") arHead(sv, x2, y2, Math.atan2(y2 - cy, x2 - cx), c);
+      if (hd === "b") arHead(sv, x1, y1, Math.atan2(y1 - cy, x1 - cx), c);
+      if (o.l) { const bx = o.at === "s" ? x1 : o.at === "e" ? x2 : (mx + cx) / 2, by = o.at === "s" ? y1 : o.at === "e" ? y2 : (my + cy) / 2;
+        const tx = svgEl("text", { x: bx + +(o.lx || 0), y: by + +(o.ly || 0) + 3, "font-size": 10.5, fill: o.lc || c, "text-anchor": "middle" }); tx.textContent = o.l; sv.appendChild(tx); }
+    });
+    (h.getAttribute("data-bx") || "").split(";").map(s => s.trim()).filter(Boolean).forEach(spec => {
+      const parts = spec.split("|"), c = parts[1] || ink; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      parts[0].split(",").forEach(n => { const e = h.querySelector('[data-a="' + n.trim() + '"]'), r = e && relRect(e, h); if (!r) return;
+        x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.left + r.width); y1 = Math.max(y1, r.top + r.height); });
+      if (x0 < 1e9) sv.appendChild(svgEl("ellipse", { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, rx: (x1 - x0) / 2 + 6, ry: (y1 - y0) / 2 + 3, fill: "none", stroke: c, "stroke-width": 1 }));
+    });
+  });
+}
+function isWide(w, half) {
+  const el = w.firstElementChild;
+  if (["TABLE", "OL", "P"].includes(el.tagName)) return true;
+  const svg = el.querySelector(".a4-fig svg"), vb = svg && svg.viewBox && svg.viewBox.baseVal;
+  if (vb && vb.width >= 700) return true;
+  w.style.width = half + "px";
+  return w.scrollWidth > w.clientWidth + 1 || [...w.querySelectorAll("table")].some(t => t.offsetWidth > w.clientWidth + 1);
+}
+function paginate() {
+  const pg = $("mPage"), cs = getComputedStyle(pg), rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const W = pg.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const H = pg.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const gap = .5 * rem, half = (W - gap) / 2, meas = $("mMeas");
+  meas.innerHTML = ""; meas.style.width = W + "px";
+  $("mat").style.setProperty("--mpH", H + "px");
+  const pages = [];
+  MT.secs.forEach((s, si) => {
+    const items = s.b.map(w => { meas.appendChild(w); w.className = "mb mp"; w.style.width = ""; const wide = isWide(w, half); w.style.width = (wide ? W : half) + "px"; return { w, wide, h: w.offsetHeight }; });
+    const rows = [];
+    for (let i = 0; i < items.length; i++) {
+      const a = items[i], b = items[i + 1];
+      if (!a.wide && b && !b.wide) { rows.push({ ws: [a.w, b.w], h: Math.max(a.h, b.h) }); i++; }
+      else rows.push({ ws: [a.w], h: a.h, half1: !a.wide });
+    }
+    let page = null, used = 0;
+    for (const r of rows) {
+      if (!page || used + gap + r.h > H) { page = { s: si, rows: [] }; pages.push(page); used = -gap; }
+      page.rows.push(r); used += gap + r.h;
+    }
+  });
+  meas.innerHTML = "";
+  for (const s of MT.secs) for (const w of s.b) w.style.width = "";
+  MT.pages = pages;
+  MT.size = innerWidth + "x" + innerHeight;
+}
+function renderMat() {
+  const p = MT.pages[MT.i], pg = $("mPage");
+  pg.innerHTML = "";
+  for (const r of p.rows) {
+    const row = document.createElement("div"); row.className = "mrow";
+    r.ws.forEach(w => { w.className = "mb mp" + (r.half1 ? " half1" : ""); row.appendChild(w); });
+    pg.appendChild(row);
+  }
+  pg.scrollTop = 0;
+  $("mSec").textContent = MT.secs[p.s].t;
+  $("mNo").textContent = (MT.i + 1) + " / " + MT.pages.length;
+  $("bMPrev").disabled = MT.i === 0; $("bMNext").disabled = MT.i === MT.pages.length - 1;
+  requestAnimationFrame(() => drawMarks(pg));
+}
+function matGo(i) { if (i < 0 || i >= MT.pages.length || i === MT.i) return; MT.i = i; sTap(); renderMat(); }
+function pageOfKey(k) {
+  if (!k) return 0;
+  const hit = f => MT.pages.findIndex(p => p.rows.some(r => r.ws.some(w => f(w.dataset.k))));
+  const i = hit(x => x === k); if (i >= 0) return i;
+  const j = hit(x => x.includes(k)); return j >= 0 ? j : 0;
+}
+function openMat(cat, key, from) {
+  loadMat(cat).then(d => {
+    if (MT.cat !== cat) {
+      MT.cat = cat; MT.secs = matSecs(d);
+      let st = $("matcss"); if (!st) { st = document.createElement("style"); st.id = "matcss"; document.head.appendChild(st); }
+      st.textContent = d.css;
+    }
+    MT.from = from; sTap();
+    $("mCat").textContent = (CATS.find(c => c.id === cat) || {}).name + "のまとめ";
+    $("mToc").hidden = true;
+    show("mat");
+    paginate();
+    MT.i = pageOfKey(key);
+    renderMat();
+  }).catch(() => {});
+}
+function matBack() {
+  sTap(); $("mToc").hidden = true;
+  if (MT.from === "play") show("play"); else if (MT.from === "list") renderList(); else renderHome();
+}
+$("bMat").onclick = () => { const q = P.list[P.i]; openMat(q.c, q.m || "", "play"); };
+$("bLMat").onclick = () => openMat(S.list.cat, "", "list");
+$("bMBack").onclick = matBack;
+$("bMPrev").onclick = () => matGo(MT.i - 1);
+$("bMNext").onclick = () => matGo(MT.i + 1);
+$("bToc").onclick = () => {
+  const t = $("mToc");
+  if (!t.hidden) { t.hidden = true; return; }
+  const cur = MT.pages[MT.i].s;
+  t.innerHTML = MT.secs.map((s, i) => '<button data-s="' + i + '"' + (i === cur ? ' class="on"' : "") + ">" + esc(s.t) + "</button>").join("");
+  t.hidden = false; sTap();
+};
+$("mToc").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; $("mToc").hidden = true; const i = MT.pages.findIndex(p => p.s === +b.dataset.s); MT.i = -1; matGo(i); });
+/* めくる：横のスワイプ。縦持ち（stage を90度回している）では画面の上下が stage の左右 */
+let tx0 = null;
+$("mPage").addEventListener("touchstart", e => { const t = e.touches[0]; tx0 = [t.clientX, t.clientY]; }, { passive: true });
+$("mPage").addEventListener("touchend", e => {
+  if (!tx0) return; const t = e.changedTouches[0];
+  let dx = t.clientX - tx0[0], dy = t.clientY - tx0[1]; tx0 = null;
+  if (matchMedia("(orientation:portrait)").matches) [dx, dy] = [dy, -dx];
+  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) matGo(MT.i + (dx < 0 ? 1 : -1));
+});
+addEventListener("keydown", e => { if ($("mat").hidden) return; if (e.key === "ArrowRight") matGo(MT.i + 1); if (e.key === "ArrowLeft") matGo(MT.i - 1); });
+function refitMat() {
+  if ($("mat").hidden || !MT.pages.length || MT.size === innerWidth + "x" + innerHeight) return;
+  const p = MT.pages[MT.i], k = p.rows[0].ws[0].dataset.k, s = p.s;
+  paginate();
+  MT.i = Math.max(0, k ? pageOfKey(k) : MT.pages.findIndex(x => x.s === s));
+  renderMat();
+}
+
 /* 画面の実寸で stage を合わせる（100dvh は iPhone で実際より短くなり、下に余白が出た） */
 function fit() {
   const r = document.documentElement.style;
   r.setProperty("--W", window.innerWidth + "px"); r.setProperty("--H", window.innerHeight + "px");
 }
 fit();
-addEventListener("resize", fit); addEventListener("orientationchange", () => setTimeout(fit, 300));
+addEventListener("resize", () => { fit(); setTimeout(refitMat, 50); }); addEventListener("orientationchange", () => setTimeout(() => { fit(); refitMat(); }, 300));
 
 renderHome();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
