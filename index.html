@@ -205,13 +205,13 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
 #mat{flex-direction:column;gap:.35rem;position:relative}
 #mSec{flex:1;min-width:0;font-size:.74rem;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tocb{flex:none;height:1.7rem;padding:0 .8rem;border-radius:.5rem;background:var(--paper);box-shadow:inset 0 0 0 .07rem var(--keyb);font-size:.72rem;font-weight:600}
-#mPage{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--paper);border-radius:.55rem;
+#mPage{position:relative;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--paper);border-radius:.55rem;
   box-shadow:0 .1rem .35rem var(--shadow);padding:.5rem .6rem}
 .mrow{display:flex;gap:.5rem;align-items:flex-start}
 .mrow+.mrow{margin-top:.5rem}
 .mrow>.mb{flex:1 1 0;min-width:0}
-.mrow>.mb.half1{flex:0 0 calc(50% - .25rem)}
-#mMeas{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none}
+.tocb.draft{background:var(--shu);color:#fff;box-shadow:none}
+.tocb.draft.on{background:var(--ink);color:var(--paper)}
 .mfoot{flex:none;display:flex;align-items:center;gap:.6rem}
 .mfoot .btn{width:9rem}
 .mfoot span{flex:1;text-align:center;font-size:.8rem;color:var(--sub)}
@@ -219,6 +219,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
   box-shadow:0 .2rem 1rem var(--shadow);padding:.5rem;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:.3rem;align-content:start}
 #mToc button{text-align:left;padding:.35rem .6rem;border-radius:.4rem;font-size:.76rem;line-height:1.35;box-shadow:inset 0 0 0 .07rem var(--keyb)}
 #mToc button.on{background:var(--ink);color:var(--paper)}
+#mToc h4{grid-column:1/-1;margin:.3rem .1rem 0;font-size:.72rem;color:var(--sub);font-weight:600}
 .flip.mat{right:auto;left:.35rem;background:var(--shu);color:#fff}
 .mp{--line:var(--rule2);--head:var(--paper2);--blue:#2563c9;--red:#c8323a;--pinkc:#d6336c;--green:#1f8a4c;--yellowbg:#fdf5c9;--ar:#B27C00;--bluebg:#cfe0f7;
   --yl:#f6e27a;--uly:#e0a800;font-size:.8rem;line-height:1.5;color:var(--ink)}
@@ -305,12 +306,12 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cu
     <button class="back" id="bMBack" aria-label="戻る">‹</button>
     <span class="cn" id="mCat"></span>
     <span id="mSec"></span>
+    <button class="tocb draft" id="bDraft" hidden>神下書き</button>
     <button class="tocb" id="bToc">目次</button>
   </div>
   <div id="mPage" class="num"></div>
   <div class="mfoot"><button class="btn line" id="bMPrev">◀ 前へ</button><span class="num" id="mNo"></span><button class="btn line" id="bMNext">次へ ▶</button></div>
   <div id="mToc" hidden></div>
-  <div id="mMeas"></div>
 </section>
 
 </div>
@@ -690,10 +691,12 @@ function renderResult() {
 $("bHome").onclick = () => { sTap(); backTo(); };
 $("bRetry").onclick = () => start(P.res.filter(r => !r.ok).map(r => r.q), "もう一度", P.from);
 
-/* ---- まとめ：A4まとめ（matome\<分野>.js）を塊に割り、画面の大きさで計ってページに詰める ----
-   塊＝カード・表・箇条。節（A4の h2）ごとに新しいページ。半幅に収まらない塊（横にはみ出す・大きい図・表）は全幅。
-   1ページより高い塊は1枚に置いて縦にスクロール。矢印（data-ar）と仕訳の囲みは A4 と同じ指定を、回転に強い位置の取り方で引き直す */
-const MT = { cat: "", secs: null, pages: [], i: 0, from: "home", size: "" };
+/* ---- まとめ：A4まとめ（matome\<分野>.js）を節（A4の h2）ごとに1ページにし、ページの中は下へスクロール ----
+   塊＝カード・表・箇条。半幅に収まる塊は2つ並べ、収まらない塊（横にはみ出す・大きい図・表）と1つ余った塊は全幅。
+   神下書き（題に「神下書き」を含む節）は上の段のボタンから一覧で選ぶ（2026-11-14 本人「神下書きを見たい」）。
+   矢印（data-ar）と仕訳の囲みは A4 と同じ指定を、回転に強い位置の取り方で引き直す */
+const MT = { cat: "", secs: null, i: 0, from: "home", size: "" };
+const isDraft = s => s.t.includes("神下書き");
 function loadMat(id) {
   return new Promise((ok, ng) => {
     if (window.MATOME && MATOME[id]) return ok(MATOME[id]);
@@ -705,35 +708,10 @@ function loadMat(id) {
   });
 }
 const WRAP = ["a4-cols", "a4-cols3", "a4-colsW", "a4-grid64"];   // A4の class 名は tools\まとめ.py が a4- を付けている
-function splitTable(tb) {   // 長い表は見出しの行を付けて分ける（過去問の表は回ごと、ほかは7行ずつ）
-  const rows = [...tb.rows], head = rows.filter(r => r.querySelector("th")), body = rows.filter(r => !r.querySelector("th"));
-  if (tb.querySelector("[rowspan]") || body.length <= 7) return [tb];
-  const groups = [];
-  const kai = body.some(r => r.querySelector(".a4-kai"));
-  for (const r of body) {
-    if (!groups.length || (kai ? r.querySelector(".a4-kai") : groups[groups.length - 1].length >= 6)) groups.push([]);
-    groups[groups.length - 1].push(r);
-  }
-  return groups.map(g => {
-    const t = tb.cloneNode(false);
-    const cg = tb.querySelector("colgroup"); if (cg) t.appendChild(cg.cloneNode(true));
-    const tbd = document.createElement("tbody");
-    head.concat(g).forEach(r => tbd.appendChild(r.cloneNode(true)));
-    t.appendChild(tbd); return t;
-  });
-}
 function matSecs(d) {
   const root = new DOMParser().parseFromString("<div>" + d.html + "</div>", "text/html").body.firstChild;
   const secs = []; let cur = { t: "はじめに", b: [] }; secs.push(cur);
-  const add = el => {
-    if (el.tagName === "TABLE") { splitTable(el).forEach(t => cur.b.push(t)); return; }
-    if (el.tagName === "UL" && el.children.length > 7) {   // 長い箇条（引っかけ）は7行ずつ
-      const li = [...el.children];
-      for (let i = 0; i < li.length; i += 7) { const u = el.cloneNode(false); li.slice(i, i + 7).forEach(x => u.appendChild(x.cloneNode(true))); cur.b.push(u); }
-      return;
-    }
-    cur.b.push(el);
-  };
+  const add = el => cur.b.push(el);
   const walk = el => {
     for (const c of [...el.children]) {
       if (c.tagName === "H1") continue;
@@ -827,61 +805,53 @@ function drawMarks(root) {
     });
   });
 }
+/* 中の2列（A4の cols・grid64 など）：列からはみ出す物があれば縦に積む（半幅の例題8で表が説明文に重なった） */
+function fixCols(root) {
+  root.querySelectorAll(".a4-cols,.a4-cols3,.a4-colsW,.a4-grid64").forEach(g => {
+    g.style.gridTemplateColumns = "";
+    const over = [...g.children].some(c => c.scrollWidth > c.clientWidth + 1 || [...c.querySelectorAll("table")].some(t => t.offsetWidth > c.clientWidth + 1));
+    if (over) g.style.gridTemplateColumns = "1fr";
+  });
+}
 function isWide(w, half) {
   const el = w.firstElementChild;
   if (["TABLE", "OL", "P"].includes(el.tagName)) return true;
   const svg = el.querySelector(".a4-fig svg"), vb = svg && svg.viewBox && svg.viewBox.baseVal;
   if (vb && vb.width >= 700) return true;
-  w.style.width = half + "px";
-  return w.scrollWidth > w.clientWidth + 1 || [...w.querySelectorAll("table")].some(t => t.offsetWidth > w.clientWidth + 1);
-}
-function paginate() {
-  const pg = $("mPage"), cs = getComputedStyle(pg), rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const W = pg.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  const H = pg.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  const gap = .5 * rem, half = (W - gap) / 2, meas = $("mMeas");
-  meas.innerHTML = ""; meas.style.width = W + "px";
-  $("mat").style.setProperty("--mpH", H + "px");
-  const pages = [];
-  MT.secs.forEach((s, si) => {
-    const items = s.b.map(w => { meas.appendChild(w); w.className = "mb mp"; w.style.width = ""; const wide = isWide(w, half); w.style.width = (wide ? W : half) + "px"; return { w, wide, h: w.offsetHeight }; });
-    const rows = [];
-    for (let i = 0; i < items.length; i++) {
-      const a = items[i], b = items[i + 1];
-      if (!a.wide && b && !b.wide) { rows.push({ ws: [a.w, b.w], h: Math.max(a.h, b.h) }); i++; }
-      else rows.push({ ws: [a.w], h: a.h, half1: !a.wide });
-    }
-    let page = null, used = 0;
-    for (const r of rows) {
-      if (!page || used + gap + r.h > H) { page = { s: si, rows: [] }; pages.push(page); used = -gap; }
-      page.rows.push(r); used += gap + r.h;
-    }
-  });
-  meas.innerHTML = "";
-  for (const s of MT.secs) for (const w of s.b) w.style.width = "";
-  MT.pages = pages;
-  MT.size = innerWidth + "x" + innerHeight;
+  w.style.width = half + "px"; fixCols(w);
+  return w.scrollWidth > w.clientWidth + 1 || [...w.querySelectorAll("table")].some(t => t.offsetWidth > t.parentElement.clientWidth + 1);
 }
 function renderMat() {
-  const p = MT.pages[MT.i], pg = $("mPage");
+  const s = MT.secs[MT.i], pg = $("mPage"), cs = getComputedStyle(pg), rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const W = pg.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const H = pg.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const half = (W - .5 * rem) / 2;
+  $("mat").style.setProperty("--mpH", H + "px");
   pg.innerHTML = "";
-  for (const r of p.rows) {
-    const row = document.createElement("div"); row.className = "mrow";
-    r.ws.forEach(w => { w.className = "mb mp" + (r.half1 ? " half1" : ""); row.appendChild(w); });
+  const items = s.b.map(w => { w.className = "mb mp"; w.style.width = ""; pg.appendChild(w); const wide = isWide(w, half); w.style.width = ""; return { w, wide }; });
+  pg.innerHTML = "";
+  for (let i = 0; i < items.length; i++) {
+    const a = items[i], b = items[i + 1], row = document.createElement("div"); row.className = "mrow";
+    row.appendChild(a.w);
+    if (!a.wide && b && !b.wide) { row.appendChild(b.w); i++; }
     pg.appendChild(row);
   }
+  fixCols(pg);
   pg.scrollTop = 0;
-  $("mSec").textContent = MT.secs[p.s].t;
-  $("mNo").textContent = (MT.i + 1) + " / " + MT.pages.length;
-  $("bMPrev").disabled = MT.i === 0; $("bMNext").disabled = MT.i === MT.pages.length - 1;
+  const d = isDraft(s), ds = MT.secs.filter(isDraft);
+  $("mSec").textContent = s.t;
+  $("mNo").textContent = d ? "神下書き " + (ds.indexOf(s) + 1) + " / " + ds.length : (MT.i + 1) + " / " + MT.secs.length;
+  $("bMPrev").disabled = MT.i === 0; $("bMNext").disabled = MT.i === MT.secs.length - 1;
+  $("bDraft").classList.toggle("on", d);
+  MT.size = innerWidth + "x" + innerHeight;
   requestAnimationFrame(() => drawMarks(pg));
 }
-function matGo(i) { if (i < 0 || i >= MT.pages.length || i === MT.i) return; MT.i = i; sTap(); renderMat(); }
-function pageOfKey(k) {
-  if (!k) return 0;
-  const hit = f => MT.pages.findIndex(p => p.rows.some(r => r.ws.some(w => f(w.dataset.k))));
-  const i = hit(x => x === k); if (i >= 0) return i;
-  const j = hit(x => x.includes(k)); return j >= 0 ? j : 0;
+function matGo(i) { if (i < 0 || i >= MT.secs.length || i === MT.i) return; MT.i = i; sTap(); renderMat(); }
+function secOfKey(k) {   // 問題の結び先（カードの見出し）がある節と塊
+  if (!k) return null;
+  for (const f of [x => x === k, x => x.includes(k)])
+    for (let i = 0; i < MT.secs.length; i++) { const w = MT.secs[i].b.find(w => f(w.dataset.k)); if (w) return { i, w }; }
+  return null;
 }
 function openMat(cat, key, from) {
   loadMat(cat).then(d => {
@@ -893,10 +863,12 @@ function openMat(cat, key, from) {
     MT.from = from; sTap();
     $("mCat").textContent = (CATS.find(c => c.id === cat) || {}).name + "のまとめ";
     $("mToc").hidden = true;
+    $("bDraft").hidden = !MT.secs.some(isDraft);
     show("mat");
-    paginate();
-    MT.i = pageOfKey(key);
+    const hit = secOfKey(key);
+    MT.i = hit ? hit.i : 0;
     renderMat();
+    if (hit) { const r = relRect(hit.w, $("mPage")); if (r) $("mPage").scrollTop = Math.max(0, r.top - 8); }
   }).catch(() => {});
 }
 function matBack() {
@@ -908,14 +880,18 @@ $("bLMat").onclick = () => openMat(S.list.cat, "", "list");
 $("bMBack").onclick = matBack;
 $("bMPrev").onclick = () => matGo(MT.i - 1);
 $("bMNext").onclick = () => matGo(MT.i + 1);
-$("bToc").onclick = () => {
+/* 目次：まとめの節と神下書きを分けて並べる。「神下書き」ボタンは神下書きだけ */
+function showToc(onlyDraft) {
   const t = $("mToc");
-  if (!t.hidden) { t.hidden = true; return; }
-  const cur = MT.pages[MT.i].s;
-  t.innerHTML = MT.secs.map((s, i) => '<button data-s="' + i + '"' + (i === cur ? ' class="on"' : "") + ">" + esc(s.t) + "</button>").join("");
-  t.hidden = false; sTap();
-};
-$("mToc").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; $("mToc").hidden = true; const i = MT.pages.findIndex(p => p.s === +b.dataset.s); MT.i = -1; matGo(i); });
+  if (!t.hidden && t.dataset.d === String(onlyDraft)) { t.hidden = true; return; }
+  const btn = i => '<button data-s="' + i + '"' + (i === MT.i ? ' class="on"' : "") + ">" + esc(MT.secs[i].t) + "</button>";
+  const idx = MT.secs.map((s, i) => i), dr = idx.filter(i => isDraft(MT.secs[i])), ot = idx.filter(i => !isDraft(MT.secs[i]));
+  t.innerHTML = (onlyDraft ? "" : '<h4>まとめ</h4>' + ot.map(btn).join("")) + (dr.length ? '<h4>神下書き</h4>' + dr.map(btn).join("") : "");
+  t.dataset.d = String(onlyDraft); t.hidden = false; t.scrollTop = 0; sTap();
+}
+$("bToc").onclick = () => showToc(false);
+$("bDraft").onclick = () => showToc(true);
+$("mToc").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; $("mToc").hidden = true; MT.i = -1; matGo(+b.dataset.s); });
 /* めくる：横のスワイプ。縦持ち（stage を90度回している）では画面の上下が stage の左右 */
 let tx0 = null;
 $("mPage").addEventListener("touchstart", e => { const t = e.touches[0]; tx0 = [t.clientX, t.clientY]; }, { passive: true });
@@ -927,11 +903,10 @@ $("mPage").addEventListener("touchend", e => {
 });
 addEventListener("keydown", e => { if ($("mat").hidden) return; if (e.key === "ArrowRight") matGo(MT.i + 1); if (e.key === "ArrowLeft") matGo(MT.i - 1); });
 function refitMat() {
-  if ($("mat").hidden || !MT.pages.length || MT.size === innerWidth + "x" + innerHeight) return;
-  const p = MT.pages[MT.i], k = p.rows[0].ws[0].dataset.k, s = p.s;
-  paginate();
-  MT.i = Math.max(0, k ? pageOfKey(k) : MT.pages.findIndex(x => x.s === s));
+  if ($("mat").hidden || !MT.secs || MT.size === innerWidth + "x" + innerHeight) return;
+  const pg = $("mPage"), f = pg.scrollHeight > pg.clientHeight ? pg.scrollTop / (pg.scrollHeight - pg.clientHeight) : 0;
   renderMat();
+  pg.scrollTop = f * (pg.scrollHeight - pg.clientHeight);
 }
 
 /* 画面の実寸で stage を合わせる（100dvh は iPhone で実際より短くなり、下に余白が出た） */
